@@ -9,7 +9,8 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>
   const result=await transaction(async db=>{
     const accessible=await db.query(`SELECT 1 FROM class_sessions s JOIN subjects sub ON sub.id=s.subject_id
       JOIN enrollments e ON e.subject_id=sub.id WHERE s.id=$1 AND sub.instructor_id=$2 AND e.student_id=$3 AND e.status='active' AND s.state='active'`,[id,user.id,studentId]);
-    if(!accessible.rowCount)return {error:'Student not enrolled, session closed, or class not assigned.'};
+    // Works while the session is active, whether the QR is open or closed. After "End session", use corrections.
+    if(!accessible.rowCount)return {error:'Student not enrolled, session ended, or class not assigned.'};
     const r=await db.query(`INSERT INTO attendance_records(student_id,session_id,status,method,added_by,manual_reason,verification)
       VALUES($1,$2,'manual','manual',$3,$4,'manual') ON CONFLICT(student_id,session_id) DO NOTHING RETURNING id`,[studentId,id,user.id,reason]);
     if(!r.rowCount)return {error:'Attendance already exists.'};

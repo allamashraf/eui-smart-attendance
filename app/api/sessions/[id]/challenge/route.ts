@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import QRCode from 'qrcode';
-import { authorize, isError, jsonError, qrToken, currentSlot, slotStart, slotEnd, sha } from '@/lib/security';
+import { authorize, isError, isUuid, jsonError, qrToken, currentSlot, slotStart, slotEnd, sha } from '@/lib/security';
 import { QR } from '@/lib/config';
 import { query } from '@/lib/db';
 export const runtime = 'nodejs';
@@ -8,6 +8,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest, {params}:{params:Promise<{id:string}>}) {
   const user = await authorize(req,'instructor'); if (isError(user)) return user;
   const {id} = await params;
+  if (!isUuid(id)) return jsonError('Session not found.',404);
   const {rows} = await query(`SELECT s.*, sub.code, sub.title AS subject_title,
     (SELECT count(*)::int FROM attendance_records a WHERE a.session_id=s.id) AS attended,
     (SELECT count(*)::int FROM enrollments e WHERE e.subject_id=s.subject_id AND e.status='active') AS roster_count
@@ -16,6 +17,8 @@ export async function GET(req: NextRequest, {params}:{params:Promise<{id:string}
   if (!rows.length) return jsonError('Session not found.',404);
   const s=rows[0];
   if (s.state !== 'active') return NextResponse.json({state:'ended',attended:s.attended,roster_count:s.roster_count});
+  // QR closed by the instructor: no token is issued at all.
+  if (!s.qr_open) return NextResponse.json({state:'qr_closed',now:new Date().toISOString(),intervalSeconds:QR.intervalSeconds,attended:s.attended,roster_count:s.roster_count,code:s.code,sessionTitle:s.title}, {headers:{'Cache-Control':'no-store'}});
   const now=Date.now(); const slot=currentSlot(now);
   const token=qrToken(id,slot); const exp=slotEnd(slot);
   await query(`INSERT INTO attendance_challenges(session_id,slot,token_hash,issued_at,expires_at)

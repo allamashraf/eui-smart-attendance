@@ -26,6 +26,8 @@ export async function parsePost(req: NextRequest): Promise<Record<string, any> |
   } catch { return jsonError('Invalid JSON.'); }
 }
 export function isError(x: unknown): x is NextResponse { return x instanceof NextResponse; }
+// Checked before an id reaches SQL, so a malformed id gives a clean 404 instead of a database error.
+export function isUuid(s: string) { return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(s); }
 export function sha(text: string) { return createHash('sha256').update(text).digest('hex'); }
 function qrSecret() {
   if (!process.env.QR_SECRET || process.env.QR_SECRET.length < 32 || process.env.QR_SECRET === process.env.AUTH_SECRET || /^(REPLACE_|PASTE_)/.test(process.env.QR_SECRET)) throw new Error('QR_SECRET is not configured.');

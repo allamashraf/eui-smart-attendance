@@ -36,16 +36,19 @@ export async function POST(req:NextRequest) {
   let result: Outcome={ok:false,error:'Unable to check in.',code:'error'};
   try {
     result=await transaction<Outcome>(async db=>{
-      const {rows} = await db.query(`SELECT s.id,s.started_at,s.state,s.ontime_minutes,s.cutoff_minutes,s.anchor_lat,s.anchor_lon,s.anchor_accuracy_m,
+      const {rows} = await db.query(`SELECT s.id,s.started_at,s.state,s.qr_open,s.ontime_minutes,s.cutoff_minutes,s.anchor_lat,s.anchor_lon,s.anchor_accuracy_m,
         EXISTS(SELECT 1 FROM enrollments e WHERE e.subject_id=s.subject_id AND e.student_id=$2 AND e.status='active') AS enrolled,
         EXISTS(SELECT 1 FROM attendance_challenges ch WHERE ch.session_id=s.id AND ch.slot=$3 AND ch.token_hash=$4 AND now()>=ch.issued_at AND now()<=ch.expires_at + $5 * interval '1 second') AS issued,
-        EXISTS(SELECT 1 FROM attendance_records ar WHERE ar.student_id=$2 AND ar.session_id=s.id) AS already
+        EXISTS(SELECT 1 FROM attendance_records ar WHERE ar.student_id=$2 AND ar.session_id=s.id) AS already,
+        EXISTS(SELECT 1 FROM security_events ev WHERE ev.session_id=s.id AND ev.user_id=$2 AND ev.type='marked_absent') AS marked_absent
         FROM class_sessions s WHERE s.id=$1 FOR SHARE OF s`,[parsed.sessionId,user.id,parsed.slot,sha(token),QR.graceSeconds]);
       if(!rows.length||rows[0].state!=='active')return {ok:false,error:'This class session is not active.',code:'not_active'};
       const s=rows[0];
+      if(!s.qr_open)return {ok:false,error:'Check-in is closed. Ask your instructor.',code:'qr_closed'};
       if(!s.enrolled)return {ok:false,error:'You are not enrolled in this class.',code:'not_enrolled'};
       if(!s.issued)return {ok:false,error:'The QR code was not issued by this session.',code:'not_issued'};
       if(s.already)return {ok:false,error:'You have already checked in to this session.',code:'already'};
+      if(s.marked_absent)return {ok:false,error:'Your instructor marked you absent for this session. If this is a mistake, ask your instructor or request a correction.',code:'marked_absent'};
       const minutes=(Date.now()-new Date(s.started_at).getTime())/60000;
       if(minutes>s.cutoff_minutes)return {ok:false,error:'Check-in has closed. Request a correction.',code:'closed'};
       const status=minutes>s.ontime_minutes?'late':'present';
