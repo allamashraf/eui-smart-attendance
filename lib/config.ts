@@ -23,3 +23,20 @@ export const QR = {
   /** QR_GRACE_SECONDS: extra time after a code changes, for slow phones and networks. Default 3, allowed 0–10. */
   graceSeconds: wholeNumber('QR_GRACE_SECONDS', 3, 0, 10),
 };
+
+/**
+ * Location rules used by decideLocation() in lib/location.ts. All values are in metres.
+ * "gap" = distance − student accuracy − room accuracy: the closest the two devices could really be.
+ */
+export const LOCATION = {
+  /** RADIUS_M: a gap up to this counts as inside the room. Default 75, allowed 10–1000. */
+  radiusM: wholeNumber('RADIUS_M', 75, 10, 1000),
+  /**
+   * MAX_ACCURACY_M: a student reading less precise than ±this is "uncertain" and goes to review.
+   * It is also the least precise room location the instructor may save. Default 150, allowed 10–5000.
+   */
+  maxAccuracyM: wholeNumber('MAX_ACCURACY_M', 150, 10, 5000),
+  /** REJECT_BEYOND_M: a gap beyond this is "outside": no record, alert R9. Default 1000, allowed 100–100000. */
+  rejectBeyondM: wholeNumber('REJECT_BEYOND_M', 1000, 100, 100000),
+};
+if (LOCATION.rejectBeyondM <= LOCATION.radiusM) throw new Error('REJECT_BEYOND_M must be larger than RADIUS_M.');

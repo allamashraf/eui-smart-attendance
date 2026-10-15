@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "db:setup": "node --env-file=.env.local scripts/setup-db.mjs",
-    "db:seed": "node --env-file=.env.local scripts/seed.mjs"
+    "db:seed": "node --env-file=.env.local scripts/seed.mjs",
+    "test": "tsx --test lib/location.test.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -26,6 +27,7 @@
     "@types/qrcode": "^1.5.5",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "tsx": "^4.23.15",
     "typescript": "^5.6.3"
   }
 }
