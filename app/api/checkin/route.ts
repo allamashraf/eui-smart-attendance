@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authorize,isError,jsonError,parsePost,parseQrToken,sha,logEvent,createAlert } from '@/lib/security';
 import { query,transaction } from '@/lib/db';
+import { QR } from '@/lib/config';
 
 export async function POST(req:NextRequest) {
   const user=await authorize(req,'student'); if(isError(user))return user;
@@ -19,7 +20,8 @@ export async function POST(req:NextRequest) {
           'Repeated invalid or expired QR attempts from one demo user. Could reflect slow network or stale screenshots.',{rule:'R3',failures:failures.rows[0].n},user.id);
       }catch(e){console.error('Risk monitor error:',e);}
     }
-    return jsonError('This QR code is invalid or expired. Ask the instructor for the current code.',400);
+    if (parsed && parsed.valid) return jsonError('This code has expired. Scan the current code on the screen.',400,'expired');
+    return jsonError('This QR code is not a valid attendance code.',400,'invalid_qr');
   }
   const deviceId=String(body.deviceId || '');
   // Pseudonymous, not a permanent hardware identifier. Server salt prevents raw ID exposure.
@@ -33,8 +35,8 @@ export async function POST(req:NextRequest) {
     result=await transaction(async db=>{
       const {rows} = await db.query(`SELECT s.id,s.started_at,s.state,s.ontime_minutes,s.cutoff_minutes,s.location_required,
         EXISTS(SELECT 1 FROM enrollments e WHERE e.subject_id=s.subject_id AND e.student_id=$2 AND e.status='active') AS enrolled,
-        EXISTS(SELECT 1 FROM attendance_challenges ch WHERE ch.session_id=s.id AND ch.slot=$3 AND ch.token_hash=$4 AND now()>=ch.issued_at AND now()<=ch.expires_at + interval '5 seconds') AS issued
-        FROM class_sessions s WHERE s.id=$1 FOR SHARE OF s`,[parsed.sessionId,user.id,parsed.slot,sha(token)]);
+        EXISTS(SELECT 1 FROM attendance_challenges ch WHERE ch.session_id=s.id AND ch.slot=$3 AND ch.token_hash=$4 AND now()>=ch.issued_at AND now()<=ch.expires_at + $5 * interval '1 second') AS issued
+        FROM class_sessions s WHERE s.id=$1 FOR SHARE OF s`,[parsed.sessionId,user.id,parsed.slot,sha(token),QR.graceSeconds]);
       if(!rows.length||rows[0].state!=='active')return {ok:false,error:'This class session is not active.'};
       const s=rows[0];
       if(!s.enrolled)return {ok:false,error:'You are not enrolled in this class.'};

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import QRCode from 'qrcode';
-import { authorize, isError, jsonError, qrToken, QR_INTERVAL_MS, sha } from '@/lib/security';
+import { authorize, isError, jsonError, qrToken, currentSlot, slotStart, slotEnd, sha } from '@/lib/security';
+import { QR } from '@/lib/config';
 import { query } from '@/lib/db';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -15,12 +16,13 @@ export async function GET(req: NextRequest, {params}:{params:Promise<{id:string}
   if (!rows.length) return jsonError('Session not found.',404);
   const s=rows[0];
   if (s.state !== 'active') return NextResponse.json({state:'ended',attended:s.attended,roster_count:s.roster_count});
-  const now=Date.now(); const slot=Math.floor(now/QR_INTERVAL_MS);
-  const token=qrToken(id,slot); const exp=new Date((slot+1)*QR_INTERVAL_MS);
+  const now=Date.now(); const slot=currentSlot(now);
+  const token=qrToken(id,slot); const exp=slotEnd(slot);
   await query(`INSERT INTO attendance_challenges(session_id,slot,token_hash,issued_at,expires_at)
-    VALUES($1,$2,$3,$4,$5) ON CONFLICT(session_id,slot) DO NOTHING`,[id,slot,sha(token),new Date(slot*QR_INTERVAL_MS),exp]);
-  const baseUrl = (process.env.APP_URL || req.nextUrl.origin).replace(/\/$/,'');
-  const url=`${baseUrl}/checkin?token=${encodeURIComponent(token)}`;
-  const qrImage = await QRCode.toDataURL(url,{width:320,margin:2,errorCorrectionLevel:'M',color:{dark:'#0B1F3A',light:'#FFFFFF'}});
-  return NextResponse.json({state:'active',qrImage,url,manualToken:token,expiresAt:exp.toISOString(),now:new Date(now).toISOString(),attended:s.attended,roster_count:s.roster_count,code:s.code,sessionTitle:s.title}, {headers:{'Cache-Control':'no-store'}});
+    VALUES($1,$2,$3,$4,$5) ON CONFLICT(session_id,slot) DO NOTHING`,[id,slot,sha(token),slotStart(slot),exp]);
+  // The QR holds only the signed token (no link), and the response never includes the token as text.
+  // SVG stays sharp at any size; margin 4 is the quiet zone the QR standard asks for.
+  const svg = await QRCode.toString(token,{type:'svg',margin:4,errorCorrectionLevel:'M',color:{dark:'#0B1F3A',light:'#FFFFFF'}});
+  const qrImage = `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
+  return NextResponse.json({state:'active',qrImage,expiresAt:exp.toISOString(),now:new Date(now).toISOString(),intervalSeconds:QR.intervalSeconds,attended:s.attended,roster_count:s.roster_count,code:s.code,sessionTitle:s.title}, {headers:{'Cache-Control':'no-store'}});
 }

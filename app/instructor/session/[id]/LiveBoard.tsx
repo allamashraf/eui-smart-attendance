@@ -1,7 +1,7 @@
 'use client';
 import {useCallback,useEffect,useState,type FormEvent} from 'react';
-import {RefreshCw,Square,CheckCheck,Copy,AlertTriangle} from 'lucide-react';
-type Challenge={state:string;qrImage?:string;url?:string;manualToken?:string;expiresAt?:string;attended?:number;roster_count?:number;error?:string};
+import {RefreshCw,Square,CheckCheck,AlertTriangle} from 'lucide-react';
+type Challenge={state:string;qrImage?:string;expiresAt?:string;intervalSeconds?:number;attended?:number;roster_count?:number;error?:string};
 export function LiveBoard({sessionId,active,roster}:{sessionId:string,active:boolean,roster:{id:string,label:string}[]}){
   const[info,setInfo]=useState<Challenge|null>(null);const[remaining,setRemaining]=useState(0);const[error,setError]=useState('');const[ended,setEnded]=useState(!active);const[busy,setBusy]=useState(false);
   const[studentId,setStudentId]=useState(roster[0]?.id||'');const[reason,setReason]=useState('Student device unavailable at the start of class.');
@@ -13,8 +13,7 @@ export function LiveBoard({sessionId,active,roster}:{sessionId:string,active:boo
   async function manual(e:FormEvent){e.preventDefault();setBusy(true);setMessage('');try{const r=await fetch(`/api/sessions/${sessionId}/manual`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({studentId,reason})});const d=await r.json();if(!r.ok)throw new Error(d.error);setMessage('Manual attendance recorded and audited.');setTimeout(()=>window.location.reload(),1100);}catch(e){setMessage(e instanceof Error?e.message:'Failed');}finally{setBusy(false)}}
   return <><div className="qr-box">{ended?<div className="qr-placeholder"><CheckCheck size={36}/><b>Session ended</b><p>Check-ins are closed.</p></div>:info?.qrImage?<img src={info.qrImage} alt="Current rotating attendance QR" width={284} height={284}/>:<div className="qr-placeholder"><RefreshCw size={31}/><span>Loading secure QR…</span></div>}</div>
     {!ended&&<div className="qr-meta"><span><span className="pulse-dot"/> Auto-rotating QR</span><b>{remaining}s</b></div>}
-    {info?.url&&!ended&&<div className="copy-wrap"><input readOnly value={info.url} aria-label="Current attendance link"/><button type="button" onClick={()=>navigator.clipboard.writeText(info.url!)} aria-label="Copy QR check-in URL"><Copy size={17}/></button></div>}
-    <p className="micro-note">The QR opens the student check-in page on a phone. Set APP_URL to a publicly reachable HTTPS address before testing across devices. The same QR may be scanned by multiple enrolled students; one attendance record is allowed per student.</p>
+    <p className="micro-note">Students scan this code with the scanner inside the website. It holds no link, so forwarding it opens nothing, and it changes every {info?.intervalSeconds??'few'} seconds. The same QR may be scanned by multiple enrolled students; one attendance record is allowed per student.</p>
     <div className="live-count"><span>Confirmed check-ins</span><b>{info?.attended??'—'} <small>/ {info?.roster_count??roster.length}</small></b></div>
     {error&&<p className="error-message"><AlertTriangle size={16}/> {error}</p>}
     {!ended&&<button className="danger-outline-btn" type="button" onClick={end} disabled={busy}><Square size={15}/> End session</button>}
