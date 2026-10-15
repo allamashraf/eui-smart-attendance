@@ -53,6 +53,20 @@ export async function waitForServer(timeoutMs = 60000) {
   throw new Error(`No server at ${BASE_URL}. Start it with: npm run build && npm start`);
 }
 
+// A reading `metres` due north of a point (along a meridian this is exactly the haversine distance).
+export function northOf(point, metres, accuracy) {
+  return { lat: point.lat + (metres / 6371008.8) * (180 / Math.PI), lon: point.lon, accuracy };
+}
+
+// Prints rows as a plain text table with the given column keys.
+export function printTable(rows, columns) {
+  const width = columns.map((c) => Math.max(c.length, ...rows.map((r) => String(r[c] ?? '').length)));
+  const line = (cells) => cells.map((cell, i) => String(cell ?? '').padEnd(width[i])).join(' | ');
+  console.log(line(columns));
+  console.log(width.map((w) => '-'.repeat(w)).join('-+-'));
+  for (const r of rows) console.log(line(columns.map((c) => r[c])));
+}
+
 // Fetches the challenge as the instructor (which records the slot as issued on the server),
 // then rebuilds the same token the QR image contains. The API response never includes the token.
 export async function freshToken(sessionId, instructorCookie) {

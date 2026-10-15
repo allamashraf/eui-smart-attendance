@@ -8,7 +8,9 @@
     "start": "next start",
     "db:setup": "node --env-file=.env.local scripts/setup-db.mjs",
     "db:seed": "node --env-file=.env.local scripts/seed.mjs",
-    "test": "tsx --test lib/location.test.ts"
+    "test": "tsx --test lib/location.test.ts",
+    "sim:attack": "node --env-file=.env.local scripts/sim-attack.mjs",
+    "load:test": "node --env-file=.env.local scripts/load-test.mjs"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
