@@ -3,9 +3,10 @@ import {redirect} from 'next/navigation';
 import {Shell} from '@/components/Shell';
 import {QR} from '@/lib/config';
 import {CheckinClient} from './CheckinClient';
-export default async function CheckinPage({searchParams}:{searchParams:Promise<{token?:string}>}){
-  const params=await searchParams;const user=await currentUser();
-  if(!user)redirect('/login?next='+encodeURIComponent('/checkin?token='+encodeURIComponent(params.token||'')));
+// No ?token= support: the only way to check in is scanning the live code with the camera below.
+export default async function CheckinPage(){
+  const user=await currentUser();
+  if(!user)redirect('/login?next=/checkin');
   if(user.role!=='student')redirect(defaultRoute(user.role));
-  return <Shell user={user} active="/checkin" heading="Class check-in" subtitle="Scan a live QR on the instructor's display or paste the session token."><CheckinClient initialToken={params.token||''} intervalSeconds={QR.intervalSeconds} graceSeconds={QR.graceSeconds}/></Shell>;
+  return <Shell user={user} active="/checkin" heading="Class check-in" subtitle="Scan the live QR on your instructor's screen with the camera on this page."><CheckinClient intervalSeconds={QR.intervalSeconds} graceSeconds={QR.graceSeconds}/></Shell>;
 }
