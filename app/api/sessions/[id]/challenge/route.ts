@@ -1,0 +1,26 @@
+import { NextRequest, NextResponse } from 'next/server';
+import QRCode from 'qrcode';
+import { authorize, isError, jsonError, qrToken, QR_INTERVAL_MS, sha } from '@/lib/security';
+import { query } from '@/lib/db';
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export async function GET(req: NextRequest, {params}:{params:Promise<{id:string}>}) {
+  const user = await authorize(req,'instructor'); if (isError(user)) return user;
+  const {id} = await params;
+  const {rows} = await query(`SELECT s.*, sub.code, sub.title AS subject_title,
+    (SELECT count(*)::int FROM attendance_records a WHERE a.session_id=s.id) AS attended,
+    (SELECT count(*)::int FROM enrollments e WHERE e.subject_id=s.subject_id AND e.status='active') AS roster_count
+    FROM class_sessions s JOIN subjects sub ON sub.id=s.subject_id
+    WHERE s.id=$1 AND sub.instructor_id=$2`,[id,user.id]);
+  if (!rows.length) return jsonError('Session not found.',404);
+  const s=rows[0];
+  if (s.state !== 'active') return NextResponse.json({state:'ended',attended:s.attended,roster_count:s.roster_count});
+  const now=Date.now(); const slot=Math.floor(now/QR_INTERVAL_MS);
+  const token=qrToken(id,slot); const exp=new Date((slot+1)*QR_INTERVAL_MS);
+  await query(`INSERT INTO attendance_challenges(session_id,slot,token_hash,issued_at,expires_at)
+    VALUES($1,$2,$3,$4,$5) ON CONFLICT(session_id,slot) DO NOTHING`,[id,slot,sha(token),new Date(slot*QR_INTERVAL_MS),exp]);
+  const baseUrl = (process.env.APP_URL || req.nextUrl.origin).replace(/\/$/,'');
+  const url=`${baseUrl}/checkin?token=${encodeURIComponent(token)}`;
+  const qrImage = await QRCode.toDataURL(url,{width:320,margin:2,errorCorrectionLevel:'M',color:{dark:'#0B1F3A',light:'#FFFFFF'}});
+  return NextResponse.json({state:'active',qrImage,url,manualToken:token,expiresAt:exp.toISOString(),now:new Date(now).toISOString(),attended:s.attended,roster_count:s.roster_count,code:s.code,sessionTitle:s.title}, {headers:{'Cache-Control':'no-store'}});
+}
