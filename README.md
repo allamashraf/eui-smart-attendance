@@ -171,7 +171,7 @@ This project is an educational demo, **not production-ready**:
 - Indoors, phone GPS can be weak; expect some honest students in *Needs review*. Tune `RADIUS_M` and `MAX_ACCURACY_M` after measuring real rooms.
 - A website cannot obtain a permanent hardware identifier. Its local identifier is pseudonymous and resettable. Shared devices are common and not proof of misconduct.
 - The location check compares each student with **one room position per session**, not an approved campus boundary. An official campus boundary, accuracy policy and accessible fallback are **planned** and need university approval.
-- The in-site scanner uses `html5-qrcode` 2.3.8, whose last release was in 2023. It has **not been verified on a real iPhone or Android phone** in this project yet.
+- The in-site scanner uses `html5-qrcode` 2.3.8, whose last release was in 2023. Real-phone tests (a)–(d) **passed on an iPhone with Safari** (see `PHASE1_NOTES.md`). Still **pending**: test (e) (relay from home) and **Android Chrome**.
 - Initial R1/R2/R3/R8/R9 review flags are demonstrative, not validated ML. The demo computes them after check-in / manual additions in the request path; a production system should move monitoring to an **asynchronous worker**. **No supervised model, Isolation Forest, automatic sanctions, biometric checks or real EUI records**.
 - Temporary in-memory login rate limits are not shared between servers; production needs distributed rate limits, monitoring, MFA via Entra, HTTPS, security review and penetration testing.
 - The demo illustrates the main Must-have architecture and several Should-have items; optional check-out, PIN challenges, advanced fraud rules, ML demo, timetable sync, native app and full policy settings are future work.
