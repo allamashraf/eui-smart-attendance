@@ -6,7 +6,7 @@ export function LoginPanel({nextPath}:{nextPath:string}){
   const[show,setShow]=useState(false);const[busy,setBusy]=useState(false);const[error,setError]=useState('');
   async function onSubmit(e:FormEvent){e.preventDefault();setBusy(true);setError('');try{
     const res=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
-    const data=await res.json();if(!res.ok)throw new Error(data.error||'Sign in failed');window.location.href=(data.to==='/student' && nextPath.startsWith('/checkin?token=') && !nextPath.startsWith('//'))?nextPath:data.to;
+    const data=await res.json();if(!res.ok)throw new Error(data.error||'Sign in failed');window.location.href=(data.to==='/student' && nextPath==='/checkin')?nextPath:data.to;
   }catch(err){setError(err instanceof Error?err.message:'Sign in failed');setBusy(false);}}
   return <div className="login-layout">
     <div className="login-story"><div className="login-brand"><div className="brand-mark"><Activity size={29}/></div><div><b>EUI SMART ATTENDANCE</b><span>Intelligent attendance, accountable decisions.</span></div></div><div className="story-main"><p className="story-kicker">THE NEXT GENERATION OF CLASSROOM ATTENDANCE</p><h1>A smarter way<br/>to <em>show up.</em></h1><p>One platform for secure check-ins, real-time classroom management, and explainable attendance insights.</p><div className="story-features"><div><Shield size={20}/><span>Rotating secure QR</span></div><div><Users size={20}/><span>Enrollment verification</span></div><div><GraduationCap size={20}/><span>Clear attendance history</span></div></div></div><p className="story-bottom">Egypt University of Informatics · Student-built project</p></div>

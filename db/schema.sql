@@ -40,8 +40,14 @@ CREATE TABLE IF NOT EXISTS class_sessions (
   state varchar(16) NOT NULL DEFAULT 'active' CHECK (state IN ('active','ended')),
   ontime_minutes int NOT NULL DEFAULT 15 CHECK (ontime_minutes BETWEEN 1 AND 120),
   cutoff_minutes int NOT NULL DEFAULT 90 CHECK (cutoff_minutes BETWEEN 5 AND 300),
-  location_required boolean NOT NULL DEFAULT false,
-  created_at timestamptz NOT NULL DEFAULT now()
+  location_required boolean NOT NULL DEFAULT false, -- unused since Phase 1: a check-in without location goes to review
+  created_at timestamptz NOT NULL DEFAULT now(),
+  -- Phase 1 (also added to existing databases by db/migrations/002_phase1.sql)
+  anchor_lat double precision CHECK (anchor_lat BETWEEN -90 AND 90),
+  anchor_lon double precision CHECK (anchor_lon BETWEEN -180 AND 180),
+  anchor_accuracy_m numeric(9,2) CHECK (anchor_accuracy_m >= 0),
+  anchor_set_at timestamptz,
+  qr_open boolean NOT NULL DEFAULT true
 );
 CREATE TABLE IF NOT EXISTS attendance_challenges (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -60,10 +66,13 @@ CREATE TABLE IF NOT EXISTS attendance_records (
   method varchar(16) NOT NULL CHECK (method IN ('qr','manual')),
   checked_in_at timestamptz NOT NULL DEFAULT now(),
   device_hash char(64),
-  location_result varchar(24) NOT NULL DEFAULT 'not_collected',
-  accuracy_m numeric(9,2),
+  location_result varchar(24) NOT NULL DEFAULT 'not_collected', -- Phase 1: inside | uncertain | no_location | no_anchor
+  accuracy_m numeric(9,2), -- the student's reported accuracy (± metres); raw coordinates are never stored
   added_by uuid REFERENCES users(id),
   manual_reason text,
+  -- Phase 1 (also added to existing databases by db/migrations/002_phase1.sql)
+  verification varchar(16) NOT NULL DEFAULT 'needs_review' CHECK (verification IN ('verified','needs_review','manual')),
+  distance_m numeric(10,1) CHECK (distance_m >= 0),
   UNIQUE(student_id,session_id)
 );
 CREATE TABLE IF NOT EXISTS security_events (
@@ -120,6 +129,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 CREATE INDEX IF NOT EXISTS idx_enroll_student ON enrollments(student_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_subject ON class_sessions(subject_id, started_at DESC);
 CREATE INDEX IF NOT EXISTS idx_records_student ON attendance_records(student_id, checked_in_at DESC);
+CREATE INDEX IF NOT EXISTS idx_records_session ON attendance_records(session_id, checked_in_at DESC);
 CREATE INDEX IF NOT EXISTS idx_challenges_session ON attendance_challenges(session_id, slot DESC);
 CREATE INDEX IF NOT EXISTS idx_security_session ON security_events(session_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_alerts_state ON risk_alerts(state, created_at DESC);

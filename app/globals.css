@@ -5,3 +5,70 @@
 @media(max-width:1150px){.sidebar{width:225px}.content{padding:28px 24px}.stats-grid{gap:10px}.stat-card{padding:16px}.review-items{grid-template-columns:1fr}.sample-label{display:inline-block;margin-top:4px}}
 @media(max-width:880px){.sidebar{width:75px;padding:18px 10px}.brand{padding:6px 4px 24px}.brand>span:last-child,.sidebar-section,.nav-link:not(.selected),.nav-link.selected{font-size:0}.nav-link{justify-content:center;padding:13px}.nav-link svg{flex-shrink:0}.sidebar-help,.sidebar-copyright{display:none}.nav-logout{justify-content:center;font-size:0}.nav-logout svg{flex-shrink:0}.topbar{padding:0 22px}.stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.content-grid,.session-grid,.checkin-wrap{grid-template-columns:1fr}.login-layout{grid-template-columns:1fr}.login-story{min-height:260px;padding:30px}.story-main{justify-content:center}.story-main h1{font-size:43px;margin:12px 0}.story-main>p:not(.story-kicker),.story-features,.story-bottom{display:none}.login-right{padding:30px 16px}}
 @media(max-width:540px){.sidebar{width:59px;padding:13px 5px}.sidebar .brand-mark{width:40px;height:40px}.sidebar .brand{padding:6px 3px 20px}.content{padding:19px 12px}.topbar{padding:0 12px;height:62px}.topbar-wordmark{font-size:11px}.topbar-slash{display:none}.topbar-right{gap:8px}.demo-chip{font-size:0;padding:8px}.demo-chip svg{width:16px}.user-avatar{width:30px;height:30px;font-size:10px}.page-heading{align-items:start}.page-heading h1{font-size:25px}.page-heading p{font-size:12px}.today-pill{display:none}.stats-grid{gap:8px}.stat-card{padding:13px;min-height:115px}.stat-card strong{font-size:28px}.stat-top{font-size:10px}.stat-icon{width:29px;height:29px}.panel{padding:16px;margin-bottom:12px}.content-grid{gap:10px;margin:12px 0}.feature-banner{padding:17px;flex-direction:column;align-items:flex-start;gap:13px}.class-item{gap:8px}.class-icon{height:37px;width:37px}.class-progress small{font-size:9px}.two-fields{grid-template-columns:1fr}.review-card{padding:13px}.login-story{min-height:210px;padding:20px}.login-brand b{font-size:11px}.story-main h1{font-size:35px}.story-kicker{font-size:9px}.login-card h2{font-size:30px}.checkin-panel{padding:19px}.feature-banner h2{font-size:16px}}
+
+/* ---------- Phase 1: check-in scanner, verification chips ---------- */
+.state-verified{color:#0E804F;background:#E5F7EF}
+.state-needs_review{color:#A97500;background:#FFF4D5}
+.location-line{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--slate);margin-bottom:8px}
+.location-line.good{color:var(--green)}
+.location-line.weak{color:var(--amber)}
+.notice-line{font-size:12px;line-height:1.6;color:#8a5f00;background:#FFF8E8;border:1px solid #f1e0b3;border-radius:9px;padding:10px 12px;margin-bottom:10px}
+.scanner-frame{width:100%;max-width:440px;min-height:260px;margin:10px auto 6px;border-radius:14px;overflow:hidden;background:var(--navy);display:grid;place-items:center}
+.scanner-frame .qr-placeholder{color:#c9d6e6}
+.scanner-view{width:100%}
+.scanner-view video{display:block;width:100%!important;height:auto!important}
+.scan-note{min-height:20px;font-size:12px;font-weight:700;color:#4e6884;text-align:center}
+.result-card{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:12px 0}
+.result-card .muted{max-width:420px;margin:4px 0 12px}
+.result-icon{width:76px;height:76px;border-radius:50%;display:grid;place-items:center;margin-bottom:8px}
+.result-icon.ok{background:#E5F7EF;color:var(--green)}
+.result-icon.warn{background:#FFF4D5;color:var(--amber)}
+.chip-row{display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;margin:6px 0}
+.spin{animation:eui-spin 1s linear infinite}
+@keyframes eui-spin{to{transform:rotate(360deg)}}
+
+/* ---------- Phase 1: instructor live board ---------- */
+.state-qr_closed{color:#A97500;background:#FFF4D5}
+.anchor-bar{display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:12px;font-weight:700;color:var(--slate);margin-bottom:10px}
+.anchor-bar.good{color:var(--green)}
+.anchor-missing{display:flex;flex-direction:column;align-items:flex-start;gap:9px}
+.link-btn{border:0;background:none;padding:0;color:var(--blue);font-weight:700;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:4px}
+.link-btn.danger{color:var(--red)}
+.link-btn:disabled{opacity:.5;cursor:default}
+.board-controls{display:flex;flex-wrap:wrap;gap:9px;margin:6px 0 4px}
+.search-field{position:relative;display:block}
+.search-field svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#8DA1B8}
+.stack-form .search-field input{padding-left:34px}
+.search-results{display:flex;flex-direction:column;gap:4px;margin-top:6px;font-weight:400}
+.search-item{display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;border:1px solid var(--line);background:#F9FBFE;border-radius:8px;padding:9px 11px;font-size:12px;color:var(--navy);cursor:pointer}
+.search-item:hover{border-color:#c2d8f8;background:var(--light-blue)}
+.search-item small{margin:0}
+.picked-student{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid #c2d8f8;background:var(--light-blue);border-radius:9px;padding:10px 12px;font-size:13px}
+.reason-chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip-btn{border:1px solid #d9e8ff;background:#fff;color:#185bb0;border-radius:40px;padding:6px 11px;font-size:11px;font-weight:700;cursor:pointer}
+.chip-btn:hover{background:var(--light-blue)}
+.row-chips{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+.roster-row{border-bottom:1px solid #EFF2F5}
+.roster-row:last-child{border:0}
+.roster-row .simple-row{border:0;padding:12px 0 6px}
+.roster-actions{display:flex;gap:16px;justify-content:flex-end;padding-bottom:10px}
+.review-form{display:flex;flex-direction:column;gap:8px;background:#F9FBFD;border:1px solid #E8EEF6;border-radius:10px;padding:12px;margin-bottom:12px}
+.review-form label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:700;color:#536780}
+.review-form input{background:#fff;border:1px solid #DDE5EE;border-radius:9px;outline:none;color:#172e4b;padding:10px 12px;width:100%;min-width:0}
+.review-form input:focus{border-color:var(--blue);box-shadow:0 0 0 3px #1f5fbf14}
+
+/* ---------- Phase 1 polish: attendance history as cards on small screens ---------- */
+@media(max-width:540px){
+  .history-table{min-width:0}
+  .history-table thead{display:none}
+  .history-table,.history-table tbody,.history-table tr,.history-table td{display:block;width:100%}
+  .history-table tr{border:1px solid var(--line);border-radius:11px;padding:8px 12px;margin-bottom:10px;background:#fff}
+  .history-table td{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:6px 0;border:0;text-align:right}
+  .history-table td::before{content:attr(data-label);font-weight:700;color:var(--slate);text-align:left}
+  .history-table td.empty-table{display:block;text-align:center}
+  .history-table td.empty-table::before{content:none}
+}
+
+/* Icon-only sidebar below 880 px: hide the wordmark. Its <b> and <small> set their own font sizes,
+   so the older font-size:0 on the wrapper did not hide them and the text spilled past the sidebar. */
+@media(max-width:880px){.brand>span:last-child{display:none}}
