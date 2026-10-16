@@ -68,3 +68,7 @@
   .history-table td.empty-table{display:block;text-align:center}
   .history-table td.empty-table::before{content:none}
 }
+
+/* Icon-only sidebar below 880 px: hide the wordmark. Its <b> and <small> set their own font sizes,
+   so the older font-size:0 on the wrapper did not hide them and the text spilled past the sidebar. */
+@media(max-width:880px){.brand>span:last-child{display:none}}
