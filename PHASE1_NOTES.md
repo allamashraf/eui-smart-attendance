@@ -39,9 +39,9 @@
 
 - **What changed:** A new full-screen page for the classroom projector. It shows a big QR, a ring that counts down to the next code, a large counter ("3 / 6"), and the last 8 names.
 - **Privacy:** Names show as first name and last initial, because the whole class can see the screen.
-- **Keys:** `F` turns fullscreen on or off. `C` closes or reopens the QR. When the QR is closed, the screen says "Check-in closed". No link or code text appears anywhere.
+- **Keys:** `Shift+F` turns fullscreen on or off. `Shift+C` closes or reopens the QR. Keys do nothing while you type in a text field. When the QR is closed or reopened, a big notice shows for 2 seconds; while it is closed, the screen says "Check-in closed". No link or code text appears anywhere.
 - **Files:** `app/instructor/session/[id]/present/` (`page.tsx`, `Projector.tsx`, `present.module.css`).
-- **Demo:** On the live board, press **Open projector view**, then press `C` twice.
+- **Demo:** On the live board, press **Open projector view**, then press `Shift+C` twice.
 
 ## WP6: proof scripts and tests
 
@@ -83,6 +83,7 @@
 - **Mark absent works on any record**, not only *Needs review* ones. A teacher may see that a *Verified* student is not in the room (for example, because of a GPS-spoofing app) and must be able to remove the record. A reason is always needed and saved.
 - **R9 alerts have a score of 70.** A current code used far from the room is a strong sign of a forwarded code, stronger than a shared browser (R1: 30, R2: 55). It is still a review signal, not proof, because a location reading can be wrong.
 - **Old records go to review.** Records made before Phase 1 were never checked for location, so the migration marks old QR records as *Needs review* and keeps manual records as *Manual*.
+- **Projector keys need Shift.** In the phone test, the QR was closed and reopened 7 times in 11 seconds, most likely by normal typing on the projector laptop. Now only `Shift+C` and `Shift+F` work, keys are ignored while typing in a text field, and a big notice shows for 2 seconds when the QR closes or reopens, so nobody misses it.
 - **A new index for the live board.** The board asks every 2 seconds for one session's records, so we added an index on `(session_id, checked_in_at)` to keep that query fast.
 
 ## Known limits

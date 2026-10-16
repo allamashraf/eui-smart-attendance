@@ -28,6 +28,10 @@
 .feedItem:first-child{background:#59df8f2e}
 @keyframes feedIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
 .error{color:#ffb4b4;font-size:14px}
+/* 2-second notice when the QR is closed or reopened; it never blocks clicks. */
+.notice{position:fixed;inset:0;display:grid;place-items:center;pointer-events:none;background:#0b1f3acc;animation:noticeIn .2s ease-out}
+.notice b{font-size:clamp(40px,11vh,130px);font-weight:800;background:#fff;color:var(--navy);border-radius:24px;padding:3vh 5vw;box-shadow:0 20px 60px #0008}
+@keyframes noticeIn{from{opacity:0}to{opacity:1}}
 .footer{text-align:center;color:#8fa6c2;font-size:clamp(11px,1.6vh,16px);padding-top:1vh}
 @media (max-aspect-ratio:1/1){
   .main{grid-template-columns:1fr;gap:3vh}

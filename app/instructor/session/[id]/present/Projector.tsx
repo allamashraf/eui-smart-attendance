@@ -29,16 +29,36 @@ export function Projector({sessionId,heading,room,initiallyActive}:{sessionId:st
     finally{busyRef.current=false;setBusy(false);}
   },[challenge,ended,sessionId,refresh,setError]);
 
-  // Keyboard: F = fullscreen, C = close or reopen the QR.
+  // Keyboard: Shift+F = fullscreen, Shift+C = close or reopen the QR.
+  // Shift is required, so normal typing on the projector laptop cannot change anything.
+  // e.code is the physical key, so this also works with Caps Lock or another keyboard language.
   useEffect(()=>{
     function onKey(e:KeyboardEvent){
-      if(e.repeat||e.ctrlKey||e.metaKey||e.altKey)return;
-      if(e.key==='f'||e.key==='F'){e.preventDefault();toggleFullscreen();}
-      if(e.key==='c'||e.key==='C'){e.preventDefault();toggleQr();}
+      if(e.repeat||!e.shiftKey||e.ctrlKey||e.metaKey||e.altKey)return;
+      const el=document.activeElement as HTMLElement|null;
+      if(el&&(el.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(el.tagName)))return; // typing in a field
+      if(e.code==='KeyF'){e.preventDefault();toggleFullscreen();}
+      if(e.code==='KeyC'){e.preventDefault();toggleQr();}
     }
     window.addEventListener('keydown',onKey);
     return()=>window.removeEventListener('keydown',onKey);
   },[toggleFullscreen,toggleQr]);
+
+  // A large notice for 2 seconds whenever the QR is closed or reopened, from any screen
+  // (this keyboard, the live board, or the instructor's phone). Nothing is shown on first load.
+  const qrState=challenge?(ended?'ended':challenge.state):null;
+  const lastQrState=useRef<string|null>(null);
+  const[notice,setNotice]=useState<string|null>(null);
+  useEffect(()=>{
+    const before=lastQrState.current;
+    if(qrState)lastQrState.current=qrState;
+    if(!before||!qrState||before===qrState)return;
+    if(qrState==='qr_closed'||(qrState==='active'&&before==='qr_closed')){
+      setNotice(qrState==='qr_closed'?'QR closed':'QR reopened');
+      const t=setTimeout(()=>setNotice(null),2000);
+      return()=>clearTimeout(t);
+    }
+  },[qrState]);
 
   const total=(challenge?.intervalSeconds??8)*1000;
   const fraction=Math.min(1,remainingMs/total);
@@ -47,7 +67,7 @@ export function Projector({sessionId,heading,room,initiallyActive}:{sessionId:st
   return <div className={styles.stage}>
     <header className={styles.header}>
       <div><h1>{heading}</h1><p>{room}{room?' · ':''}Scan with the EUI website: Check in → camera</p></div>
-      <button type="button" className={styles.fsButton} onClick={toggleFullscreen} aria-label="Fullscreen (F)"><Maximize size={22}/></button>
+      <button type="button" className={styles.fsButton} onClick={toggleFullscreen} aria-label="Fullscreen (Shift+F)"><Maximize size={22}/></button>
     </header>
     <main className={styles.main}>
       <div className={styles.qrArea}>
@@ -72,6 +92,7 @@ export function Projector({sessionId,heading,room,initiallyActive}:{sessionId:st
         {error&&<p className={styles.error}>{error}</p>}
       </aside>
     </main>
-    <footer className={styles.footer}>F fullscreen · C {closed?'reopen':'close'} QR{busy?' · saving…':''}</footer>
+    <footer className={styles.footer}>Shift+F fullscreen · Shift+C {closed?'reopen':'close'} QR{busy?' · saving…':''}</footer>
+    {notice&&<div className={styles.notice} role="status" aria-live="assertive"><b>{notice}</b></div>}
   </div>;
 }

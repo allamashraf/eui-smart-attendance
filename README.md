@@ -15,7 +15,7 @@
 - Database-level `UNIQUE(student_id, session_id)` prevents duplicate records even when requests run concurrently.
 - Attendance history, status (present / late / manual), student requests for corrections, administrator reviews and audited changes.
 - Instructor **live board** (updates every 2 s): room location, **Close / Reopen QR**, assisted check-in by searching name or student number (reason required, quick-pick chips), and review of each record (**Confirm** or **Mark absent**, both audited).
-- **Projector view** (`/instructor/session/<id>/present`): full-screen QR, countdown ring, "42 / 186" counter and the latest check-ins. Keys: `F` fullscreen, `C` close/reopen QR.
+- **Projector view** (`/instructor/session/<id>/present`): full-screen QR, countdown ring, "42 / 186" counter and the latest check-ins. Keys: `Shift+F` fullscreen, `Shift+C` close/reopen QR (ignored while typing in a text field); a large notice shows for 2 seconds whenever the QR is closed or reopened.
 - First-party pseudonymous browser ID, hashed server-side. When multiple accounts use the same ID in one session, basic **R1/R2 risk signals** are created for admin review — *not automated allegations or penalties*.
 - Administrator can create classes, enroll existing demo students, review alerts and corrections, and inspect security events / audit logs.
 - Database health test at `/api/health`.
@@ -130,10 +130,10 @@ Open **http://localhost:3000**, or use `npm run build && npm start` for a local 
 
 1. Sign in as **`instructor`**, open the existing **Demo live attendance** session (or create a new session if its check-in cut-off has passed).
 2. Press **Set room location**. Do this from a phone inside the room (see below): a laptop's location is usually too imprecise and is refused. Without a room location every check-in goes to review.
-3. Press **Open projector view** and put that tab on the projector (`F` = fullscreen). The QR changes every 8 seconds.
+3. Press **Open projector view** and put that tab on the projector (`Shift+F` = fullscreen). The QR changes every 8 seconds.
 4. On a phone, sign in as **`motaz`** and open **Check in**. Allow location and the camera, then point the camera at the QR. The page shows *Present/Late* and *Verified/Needs review*.
 5. The live board and the projector counter update within 2 seconds. Scan again: only one check-in is allowed per session.
-6. Press **Close QR** (or `C` on the projector): scans are refused, but you can still add a student with **Assisted check-in** (search by name or number, give a reason).
+6. Press **Close QR** (or `Shift+C` on the projector): scans are refused, but you can still add a student with **Assisted check-in** (search by name or number, give a reason).
 7. In the roster, use **Confirm** or **Mark absent** on a *Needs review* record.
 8. Sign in as **`admin`** to see the security events, the R9 alerts, audit history and correction requests.
 
