@@ -40,11 +40,16 @@ try {
 
   if (mode === 'cleanup') {
     await client.query('BEGIN');
+    // security_events keeps rows when a session or user is deleted (ON DELETE SET NULL),
+    // so the events of LOAD-TEST sessions and LOAD- students are deleted first.
+    const events = await client.query(`DELETE FROM security_events
+      WHERE session_id IN (SELECT s.id FROM class_sessions s JOIN subjects sub ON sub.id=s.subject_id WHERE sub.code=$1 AND sub.term=$2)
+         OR user_id IN (SELECT id FROM users WHERE role='student' AND student_number LIKE 'LOAD-%' AND username LIKE 'load-%')`, [CLASS.code, CLASS.term]);
     // Deleting the class removes its sessions, and with them their attendance records, challenges and alerts.
     const subjects = await client.query(`DELETE FROM subjects WHERE code=$1 AND term=$2`, [CLASS.code, CLASS.term]);
     const users = await client.query(`DELETE FROM users WHERE role='student' AND student_number LIKE 'LOAD-%' AND username LIKE 'load-%'`);
     await client.query('COMMIT');
-    console.log(`Cleanup: removed ${subjects.rowCount} LOAD-TEST class and ${users.rowCount} LOAD- students.`);
+    console.log(`Cleanup: removed ${subjects.rowCount} LOAD-TEST class, ${users.rowCount} LOAD- students and ${events.rowCount} security events.`);
   }
 
   if (mode === 'run') {
