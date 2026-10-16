@@ -60,7 +60,7 @@
 
 ## Real-phone test (16 October 2026)
 
-**Setup:** Through a temporary HTTPS tunnel (cloudflared), we used one phone for the instructor and an iPhone with Safari for the students. The laptop showed the projector view. The instructor set the room location from inside the room: **±11 m**. The session started at 06:36 Cairo time, so check-ins after 06:51 count as *Late*.
+**Setup:** Through a temporary HTTPS tunnel (cloudflared), we used the same iPhone with Safari for the instructor and for the students (signing in and out to switch accounts). The laptop showed the projector view. The instructor set the room location from inside the room: **±11 m**. The session started at 06:36 Cairo time, so check-ins after 06:51 count as *Late*.
 
 | Test | What we did | What the phone showed | What the database recorded | Result |
 | --- | --- | --- | --- | --- |
@@ -110,4 +110,4 @@
 - **GPS-spoofing apps:** An app can fake the phone's location, and the website cannot see this. The phone also reports its own accuracy, so a student can send a very poor accuracy or no location at all. Those check-ins are not refused; they go to the instructor as *Needs review*. The instructor must look at them.
 - **Live streaming of the QR:** A friend in the room can stream the QR live, for example with a video call, to someone just outside. That person can scan it from a second screen within the code's lifetime (8 + 3 seconds). If their phone is close enough to the room, the location check will not catch it. A room PIN or random spot-checks are **planned**, not built.
 - **Indoor GPS:** Indoors, phone location can be weak, so some honest students may land in *Needs review*. The thresholds should be adjusted after we measure real rooms.
-- **Real phones:** We have not yet tested on a real iPhone or Android phone. The scanner library (`html5-qrcode` 2.3.8) has had no new version since 2023.
+- **Real phones:** Tests (a) to (d) passed on a real iPhone with Safari, and the scanner library (`html5-qrcode` 2.3.8) worked there. Still pending: test (e) (relay from home) and Android Chrome. The library has had no new version since 2023, so it should be checked again on new phone systems.
