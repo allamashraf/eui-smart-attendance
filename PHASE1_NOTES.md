@@ -58,6 +58,33 @@
 - `TEST_PLAN.md` lists what was tested automatically and the results. It also lists what still needs a person and a real phone.
 - Work that is not built is marked **planned**.
 
+## Design decisions
+
+### Where the brief and the old code did not agree
+
+1. **No location means "Needs review", not "refused".** The old `location_required` setting refused such check-ins. Nothing turned it on, and the brief wants a record with *Needs review*, so we stopped using it. The column is still in the database.
+2. **The live data route (GET) does not use `parsePost()`.** `parsePost()` needs a JSON body and an `Origin` header, and a browser sends neither on a normal GET. So `GET /live` checks the role and the session owner, like `GET /challenge` already did. Every new POST route uses both checks.
+3. **One R9 alert per student per session.** The alerts table allows only one alert for each rule key in a session. So the key is `R9_<student>`. If the same student tries again from far away, the server still saves a `checkin_far_away` event with the distance.
+4. **The room location must be precise.** The rule subtracts the room's accuracy, so a laptop's guess (for example ±1500 m) would put almost everyone "inside". The server refuses a room location worse than ±150 m (`MAX_ACCURACY_M`), so the instructor sets it from a phone.
+5. **The test scripts use `QR_SECRET` too.** The API never shows the code as text, and we may not add a QR-reading library. So the scripts ask the server for a new code (the server saves it as issued), then build the same code with `QR_SECRET`.
+6. **The "No phone" chip writes "No phone available".** A reason needs at least 10 characters, and "No phone" has only 8. We kept the 10-character rule, because it keeps reasons useful.
+7. **A student marked absent cannot scan again.** Deleting the record would let the student scan again while the QR is open. So the server remembers it (a `marked_absent` event) and refuses that student's scan. A real mistake is fixed with a correction request or a manual add.
+8. **Review still works after "End session".** Teachers often check *Needs review* records after class, so Confirm and Mark absent still work. New records after the end still need a correction request.
+
+### Smaller decisions
+
+- **Two chips per student when needed.** Status (Present/Late/Manual) and verification (Verified/Needs review) are separate, so one row can show "Late · Needs review".
+- **Confirm sets the record to *Verified*.** The audit log keeps a note that a person confirmed it, so we can always tell it apart.
+- **The signature also covers the prefix.** The HMAC signs `EUIA1.<session>.<slot>`, so a signature can never be reused with a different format version.
+- **The QR is an SVG image with a 4-module quiet zone.** It stays sharp at any size on a projector. A small PNG would look blurry when made large, and the quiet zone helps cameras find the code.
+- **The scanner never sends the same code twice.** If the server refuses a code, the phone ignores that code from then on. Otherwise an old code on the screen could send many requests and trigger R3 against an honest student.
+- **The projector shows "Mariam T.", not full names.** The whole class can see the screen, so we show less personal data. The brief said "names"; this is a small change on purpose.
+- **The load test uses its own class (LOAD-TEST).** 300 synthetic students do not fill the demo roster, and `--cleanup` removes everything. It runs against `npm run build && npm start`, because dev mode is much slower.
+- **Mark absent works on any record**, not only *Needs review* ones. A teacher may see that a *Verified* student is not in the room (for example, because of a GPS-spoofing app) and must be able to remove the record. A reason is always needed and saved.
+- **R9 alerts have a score of 70.** A current code used far from the room is a strong sign of a forwarded code, stronger than a shared browser (R1: 30, R2: 55). It is still a review signal, not proof, because a location reading can be wrong.
+- **Old records go to review.** Records made before Phase 1 were never checked for location, so the migration marks old QR records as *Needs review* and keeps manual records as *Manual*.
+- **A new index for the live board.** The board asks every 2 seconds for one session's records, so we added an index on `(session_id, checked_in_at)` to keep that query fast.
+
 ## Known limits
 
 - **GPS-spoofing apps:** An app can fake the phone's location, and the website cannot see this. The phone also reports its own accuracy, so a student can send a very poor accuracy or no location at all. Those check-ins are not refused; they go to the instructor as *Needs review*. The instructor must look at them.
