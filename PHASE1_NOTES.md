@@ -58,6 +58,25 @@
 - `TEST_PLAN.md` lists what was tested automatically and the results. It also lists what still needs a person and a real phone.
 - Work that is not built is marked **planned**.
 
+## Real-phone test (16 October 2026)
+
+**Setup:** Through a temporary HTTPS tunnel (cloudflared), we used one phone for the instructor and an iPhone with Safari for the students. The laptop showed the projector view. The instructor set the room location from inside the room: **±11 m**. The session started at 06:36 Cairo time, so check-ins after 06:51 count as *Late*.
+
+| Test | What we did | What the phone showed | What the database recorded | Result |
+| --- | --- | --- | --- | --- |
+| (a) Normal scan | `motaz` scanned the projector | "You are checked in", Late + Verified, "Your location matched the classroom" | `late`, `verified`, `inside`; student accuracy ±18 m, distance **6.1 m** from the room point | Pass |
+| (b) Scan again | `motaz` scanned a newer code | "Already checked in" | Still one record; the scan was refused as `already` | Pass |
+| (c) Location denied | `student2` scanned with location turned off in iOS | Late + Needs review, "No location was shared" | `late`, `needs_review`, `no_location`, no distance or accuracy stored | Pass |
+| (d) QR closed + assisted check-in | Instructor closed the QR, then added Laila by search with the "No phone" chip | Projector: "Check-in closed", no code. Board: "added and audited", Laila shows Manual | The server issued no codes while closed. Laila: `manual`, reason "No phone available", audit entry `manual_checkin` | Pass |
+| (e) Relay from home | A teammate scans the projector QR at home through a video call | — | — | **Pending** |
+
+**Notes**
+
+- The phone showed "±15 m", but the server received ±18 m. This is expected: the page sends the best reading from the last 30 seconds, and the ±15 m reading was older than that when the code was scanned.
+- In (c) the server also raised an **R1** alert (score 30, "shared browser"), because the same phone was used for two student accounts. This is correct; a real student lending a phone looks the same.
+- At 07:09 the QR was closed and reopened 7 times in 11 seconds, most likely by normal typing on the projector laptop. We changed the projector keys to `Shift+C` / `Shift+F` (see Design decisions).
+- Not tested yet: Android Chrome.
+
 ## Design decisions
 
 ### Where the brief and the old code did not agree
