@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import {BookOpen,Users,Radio,ClipboardCheck,ArrowUpRight} from 'lucide-react';
+import {ArrowRight,BookOpen,Radio,Users} from 'lucide-react';
 import {requireUser} from '@/lib/auth';import {query} from '@/lib/db';
 import {Shell,Stat,SectionHeader,StateBadge,displayDate} from '@/components/Shell';
 import {QR} from '@/lib/config';
@@ -14,9 +14,41 @@ export default async function InstructorPage(){const user=await requireUser('ins
     query(`SELECT count(*)::int AS total FROM enrollments e JOIN subjects s ON s.id=e.subject_id WHERE s.instructor_id=$1 AND e.status='active'`,[user.id])
   ]);
   const active=sessions.rows.filter(s=>s.state==='active').length;
-  return <Shell user={user} active="/instructor" heading={`Welcome, ${user.full_name}`} subtitle="Manage your classes, launch live QR sessions, and support your students.">
-    <div className="stats-grid three-cols"><Stat label="Classes assigned" value={classes.rows.length} note="Teaching this term" Icon={BookOpen}/><Stat label="Enrolled students" value={count.rows[0].total} note="Across your classes" Icon={Users}/><Stat label="Active sessions" value={active} note="Check-ins in progress" Icon={Radio}/></div>
-    <div className="content-grid"><section className="panel"><SectionHeader title="Your classes" note="All sample classes are synthetic"/>{classes.rows.map((c:any)=><div className="class-item" key={c.id}><div className="class-icon"><BookOpen size={22}/></div><div className="class-text"><b>{c.code} — {c.title}</b><p>{c.term} · {c.room}</p></div><div className="class-progress"><b>{c.students}</b><small>Students</small></div></div>)}{!classes.rows.length&&<p className="muted">No classes assigned yet.</p>}</section><section className="panel"><SectionHeader title="Start a new session" note={`The server generates a new secure QR every ${QR.intervalSeconds} seconds`}/><StartSessionForm classes={classes.rows.map((c:any)=>({id:c.id,label:`${c.code} — ${c.title}`}))}/></section></div>
-    <section className="panel"><SectionHeader title="Class sessions" note="Select a live session to display the QR and roster"/><div className="table-scroll"><table><thead><tr><th>Class</th><th>Session</th><th>Started</th><th>Check-ins</th><th>Status</th><th></th></tr></thead><tbody>{sessions.rows.map((s:any)=><tr key={s.id}><td><b>{s.code}</b></td><td>{s.title}</td><td>{displayDate(s.started_at)}</td><td>{s.attended}</td><td><StateBadge value={s.state}/></td><td><Link className="table-link" href={`/instructor/session/${s.id}`}>{s.state==='active'?'Open live board':'View roster'} <ArrowUpRight size={15}/></Link></td></tr>)}{!sessions.rows.length&&<tr><td className="empty-table" colSpan={6}>Start a session to see it here.</td></tr>}</tbody></table></div></section>
+  return <Shell user={user} active="/instructor" heading={`Welcome, ${user.full_name}`} subtitle="Start a live session, show the code on the projector and follow check-ins as they happen.">
+    <div className="grid grid-3 stats">
+      <Stat i={1} label="Classes assigned" value={classes.rows.length} note="Teaching this term" Icon={BookOpen}/>
+      <Stat i={2} label="Enrolled students" value={count.rows[0].total} note="Across your classes" Icon={Users}/>
+      <Stat i={3} label="Active sessions" value={active} note="Check-ins in progress" Icon={Radio}/>
+    </div>
+    <div className="split section">
+      <section className="card card-pad reveal" style={{'--i':4} as React.CSSProperties}>
+        <SectionHeader title="Your classes" note="All sample classes are synthetic"/>
+        <div>{classes.rows.map((c:any)=><div className="class-row" key={c.id}>
+          <span className="class-code" aria-hidden="true">{c.code}</span>
+          <div className="class-meta"><span className="row-title">{c.code} · {c.title}</span><span className="row-sub">{c.term} · {c.room}</span></div>
+          <div className="class-count">{c.students}<small>students</small></div>
+        </div>)}
+        {!classes.rows.length&&<p className="empty">No classes assigned yet.</p>}</div>
+      </section>
+      <section className="card card-pad reveal" style={{'--i':5} as React.CSSProperties}>
+        <SectionHeader title="Start a live session" note={`A new signed QR every ${QR.intervalSeconds} seconds`}/>
+        <StartSessionForm classes={classes.rows.map((c:any)=>({id:c.id,label:`${c.code} — ${c.title}`}))}/>
+      </section>
+    </div>
+    <section className="card card-pad section reveal" style={{'--i':6} as React.CSSProperties}>
+      <SectionHeader title="Class sessions" note="Open a live session to show the QR and follow the roster"/>
+      <div className="table-wrap"><table className="table" style={{minWidth:640}}>
+        <thead><tr><th>Class</th><th>Session</th><th>Started</th><th>Check-ins</th><th>Status</th><th className="end"><span className="sr-only">Open</span></th></tr></thead>
+        <tbody>{sessions.rows.map((s:any)=><tr key={s.id}>
+          <td><b className="num">{s.code}</b></td>
+          <td>{s.title}</td>
+          <td><span className="num muted">{displayDate(s.started_at)}</span></td>
+          <td><span className="num">{s.attended}</span></td>
+          <td><StateBadge value={s.state}/></td>
+          <td className="end"><Link className="link" href={`/instructor/session/${s.id}`}>{s.state==='active'?'Open live board':'View roster'}<ArrowRight size={15} aria-hidden="true"/></Link></td>
+        </tr>)}
+        {!sessions.rows.length&&<tr><td className="empty" colSpan={6}>Start a session to see it here.</td></tr>}</tbody>
+      </table></div>
+    </section>
   </Shell>;
 }
