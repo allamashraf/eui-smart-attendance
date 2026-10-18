@@ -111,3 +111,21 @@
 - **Live streaming of the QR:** A friend in the room can stream the QR live, for example with a video call, to someone just outside. That person can scan it from a second screen within the code's lifetime (8 + 3 seconds). If their phone is close enough to the room, the location check will not catch it. A room PIN or random spot-checks are **planned**, not built.
 - **Indoor GPS:** Indoors, phone location can be weak, so some honest students may land in *Needs review*. The thresholds should be adjusted after we measure real rooms.
 - **Real phones:** Tests (a) to (d) passed on a real iPhone with Safari, and the scanner library (`html5-qrcode` 2.3.8) worked there. Still pending: test (e) (relay from home) and Android Chrome. The library has had no new version since 2023, so it should be checked again on new phone systems.
+
+## Online deployment preparation (18 October 2026)
+
+- **Plan:** Keep the code on GitHub, use a free Supabase database, and run the website and API on Vercel. GitHub Pages cannot run this app's API.
+- **Branch:** Work is on `codex/supabase-vercel-deployment`. The owner must approve any merge into `main` before deployment.
+- **Dependency fix:** `package.json` now tells Next.js to use PostCSS 8.5.30. `package-lock.json` records the same version. The old version had security issues. We keep Next.js 15.
+- **CSS fix:** `app/globals.css` uses `flex-start` for two flex layouts. This removes the browser support warning from the build.
+- **Secret files:** `.gitignore` also ignores `.env.*`, `.vercel`, and `supabase/.temp/`. `.env.example` stays available with placeholders only.
+- **Generated types:** The build updated `next-env.d.ts` with Next.js route types and its standard file comment.
+- **Checks:** `npx tsc --noEmit`, `npm run build`, and all 18 tests passed after these changes. `npm audit` reports zero issues. There is no separate lint command in this project.
+- **GitHub Pages:** The owner approved turning it off. It is now disabled. The GitHub Pages API returns HTTP 404, as expected when there is no Pages site.
+- **Supabase setup:** The owner logged in locally. We created the `eui-attendance` organization and project, connected through the transaction pooler on port 6543, and ran `npm run db:setup` and `npm run db:seed`. The database contains only synthetic demo data. We checked that all three main accounts match the demo password.
+- **Database access fix:** Supabase gave its public API roles access to the new tables. `db/schema.sql` and `db/migrations/003_server_only_access.sql` now enable row-level security on all 11 app tables. We add no public API policies, so these roles cannot read or change the app's rows. The Next.js server uses the table owner's database connection and still has access. A future connection with a different database role will need its own access rules.
+- **Database checks:** RLS is on for all 11 tables. Both `anon` and `authenticated` see zero rows, and both are blocked from inserting a user. The server still reads all eight demo users. A local production server returned HTTP 200 from `/api/health` with `database: connected`. All three main accounts logged in and opened their role pages with HTTP 200. The public HTTPS health check is still pending deployment.
+- **Passwords:** Generated values stay in ignored `.env.local`. `SUPABASE_DB_PASSWORD` is the database password. `DEMO_PASSWORD` is shared by the demo accounts. `AUTH_SECRET` and `QR_SECRET` are different random 64-hex values. No secret values belong in GitHub or these notes.
+- **Vercel CLI:** Installed globally. The owner must run `vercel login` locally. Only `DATABASE_URL`, `AUTH_SECRET`, and `QR_SECRET` will be added to Vercel production; the seed password is not needed there.
+- **Status:** The database is ready. The website has not been deployed yet. Before Vercel deployment, push this branch and ask the owner before merging it into `main`.
+- **After deployment:** Open the HTTPS website on a phone. Check `/api/health` for `database: connected`. Test login as `motaz`, `instructor`, and `admin`. Allow camera and location access when testing attendance.
