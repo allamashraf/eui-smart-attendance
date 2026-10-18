@@ -5,6 +5,7 @@
 import { createHmac } from 'node:crypto';
 import { SignJWT } from 'jose';
 import pg from 'pg';
+import { pgOptions } from './pg-config.mjs';
 
 export const BASE_URL = (process.env.SIM_BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
 
@@ -18,7 +19,7 @@ if (!['localhost', '127.0.0.1', '[::1]'].includes(new URL(BASE_URL).hostname)) {
 
 export const QR_GRACE_SECONDS = Number(process.env.QR_GRACE_SECONDS || 3);
 export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-export function db() { return new pg.Client({ connectionString: process.env.DATABASE_URL }); }
+export function db() { return new pg.Client(pgOptions()); }
 
 // Same as issueSession() in lib/auth.ts: an HS256 JWT with typ 'demo', valid for 12 hours.
 export async function cookieFor(userId) {

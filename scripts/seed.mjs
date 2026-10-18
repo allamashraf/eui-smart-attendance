@@ -1,9 +1,11 @@
 import bcrypt from 'bcryptjs';
 import pg from 'pg';
+import { pgOptions } from './pg-config.mjs';
 if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL missing.');
-const password = 'EUI-Demo-2026!';
+const password = process.env.DEMO_PASSWORD;
+if (!password || password.length < 10) throw new Error('Set DEMO_PASSWORD (at least 10 characters) in .env.local before seeding.');
 const hash = await bcrypt.hash(password, 12);
-const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
+const client = new pg.Client(pgOptions());
 async function addUser(username, name, role, num=null) {
   const {rows} = await client.query(`INSERT INTO users(username,full_name,role,student_number,password_hash,demo)
     VALUES($1,$2,$3,$4,$5,true) ON CONFLICT(username) DO UPDATE SET full_name=excluded.full_name, password_hash=excluded.password_hash

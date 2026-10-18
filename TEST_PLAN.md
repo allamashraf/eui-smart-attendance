@@ -28,7 +28,7 @@ Screenshots with Playwright: **skipped**, Playwright is not installed in this pr
 ## Core demonstration (manual)
 
 - [ ] Open `/api/health` and verify `database: connected`.
-- [ ] Sign in as `motaz` (`EUI-Demo-2026!`); dashboard shows Motaz Alaa and CS301.
+- [ ] Sign in as `motaz` (your `DEMO_PASSWORD`); dashboard shows Motaz Alaa and CS301.
 - [ ] Sign out; sign in as `instructor`; create a fresh session and open its live board.
 - [ ] Press **Set room location** on a phone inside the room; the board shows "Room location set (±X m)". On a laptop with only Wi-Fi location, expect a clear refusal.
 - [ ] Open the projector view; the QR changes every 8 seconds and the ring counts down.

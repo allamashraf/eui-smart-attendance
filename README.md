@@ -1,5 +1,7 @@
 # EUI Smart Attendance — working prototype
 
+> **Online deployment:** see [`DEPLOY.md`](DEPLOY.md) (GitHub + Supabase + Vercel). GitHub Pages cannot run this project.
+
 **A Next.js + TypeScript + PostgreSQL project based on the 18-page EUI Smart Attendance Project Proposal v2 (October 2026).**
 
 > **DEMO, NOT AN OFFICIAL EUI SYSTEM.** The project uses synthetic data. Until Egypt University of Informatics approves Microsoft Entra ID integration, authentication uses locally stored **demo usernames and hashed passwords**. **Never enter university Microsoft credentials into the demo login page.** Do not connect real student records or publicly deploy this unreviewed prototype.
@@ -112,11 +114,11 @@ Sample class: **CS301 — Database Systems**, Fall 2026, Hall B2.
 
 | Role | Username | Password | Name |
 | --- | --- | --- | --- |
-| Student | `motaz` | `EUI-Demo-2026!` | Motaz Alaa |
-| Instructor | `instructor` | `EUI-Demo-2026!` | Dr. Salma Hassan (fictional) |
-| Admin | `admin` | `EUI-Demo-2026!` | EUI Demo Administrator |
+| Student | `motaz` | the `DEMO_PASSWORD` you set | Motaz Alaa |
+| Instructor | `instructor` | the `DEMO_PASSWORD` you set | Dr. Salma Hassan (fictional) |
+| Admin | `admin` | the `DEMO_PASSWORD` you set | EUI Demo Administrator |
 
-The seed creates **6 demo students**, an active **Demo live attendance** session, one ended **Lecture 1** session with historical attendance, and one **SIMULATED** risk alert. All the demo accounts use the same non-secret sample password. This is for local development only.
+The seed creates **6 demo students**, an active **Demo live attendance** session, one ended **Lecture 1** session with historical attendance, and one **SIMULATED** risk alert. All the demo accounts use the password you put in `DEMO_PASSWORD` (it is never written in the code). This is for local development only.
 
 ## 5. Run the website
 
@@ -151,7 +153,7 @@ The camera and precise location only work on **HTTPS** pages. `localhost` counts
 3. It prints a random `https://….trycloudflare.com` address. Open that address on the phone (and on the instructor's phone to set the room location).
 4. When you finish, **stop the tunnel with Ctrl+C**.
 
-> **Warning:** while the tunnel is open, anyone who has the address can reach your demo, and the demo passwords are printed in this README. Keep the tunnel open only while you test, never share the address publicly, and never put real student data behind it.
+> **Warning:** while the tunnel is open, anyone who has the address can reach your demo, and can try to guess the demo password. Keep the tunnel open only while you test, never share the address publicly, and never put real student data behind it.
 
 ## 6. Microsoft approval and later sign-in integration
 
