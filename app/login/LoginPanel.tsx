@@ -1,7 +1,8 @@
 'use client';
 import {useState,type FormEvent} from 'react';
-import {ArrowRight,Eye,EyeOff,Loader2,LockKeyhole,MapPin,ScanLine,ShieldCheck,AlertTriangle,User} from 'lucide-react';
+import {ArrowRight,Eye,EyeOff,Loader2,LockKeyhole,ShieldCheck,AlertTriangle,User} from 'lucide-react';
 import {BrandMark} from '@/components/Shell';
+import {Tip} from '@/components/Tip';
 
 const ROLES=[['motaz','Student'],['instructor','Instructor'],['admin','Admin']] as const;
 
@@ -33,14 +34,8 @@ export function LoginPanel({nextPath}:{nextPath:string}){
       <div className="auth-copy">
         <span className="eyebrow eyebrow-light"><span className="live-dot mint"/>Smart attendance</span>
         <h1>Attendance that can’t be forwarded.</h1>
-        <p>Signed codes that change every few seconds, scanned inside the website, with the location checked on the server.</p>
-        <ul className="auth-points">
-          <li><ScanLine size={18} aria-hidden="true"/>Rotating signed QR. No link to share.</li>
-          <li><MapPin size={18} aria-hidden="true"/>Location compared with the room by the server.</li>
-          <li><ShieldCheck size={18} aria-hidden="true"/>Every manual change needs a reason and is audited.</li>
-        </ul>
       </div>
-      <p className="auth-foot">Student project prototype · Not an official EUI system · Synthetic data only</p>
+      <p className="auth-foot">Student prototype · Not an official EUI system</p>
     </aside>
 
     <main className="auth-main">
@@ -48,7 +43,6 @@ export function LoginPanel({nextPath}:{nextPath:string}){
         <span className="badge plain" style={{alignSelf:'flex-start'}}><LockKeyhole size={13} aria-hidden="true"/>Demo sign-in</span>
         <div>
           <h2>Welcome back</h2>
-          <p className="muted" style={{marginTop:8}}>Sign in with a demonstration account. Microsoft sign-in is waiting for university approval.</p>
         </div>
         <div className="segmented role-switch" role="group" aria-label="Choose a demo account">
           {ROLES.map(([u,role])=><button key={u} type="button" aria-pressed={username===u} onClick={()=>{setUsername(u);setPassword('');setError('')}}>{role}</button>)}
@@ -62,8 +56,7 @@ export function LoginPanel({nextPath}:{nextPath:string}){
           {error&&<div className="alert alert-error" role="alert"><AlertTriangle size={16} aria-hidden="true"/><span>{error}</span></div>}
           <button type="submit" disabled={busy} className="btn btn-primary btn-lg btn-block">{busy?<><Loader2 size={18} className="spin" aria-hidden="true"/>Signing in…</>:<>Sign in<ArrowRight size={18} className="arrow" aria-hidden="true"/></>}</button>
         </form>
-        <div className="alert alert-warn"><ShieldCheck size={16} aria-hidden="true"/><span><b>Not Microsoft SSO.</b> These accounts are synthetic. Never enter your university password here.</span></div>
-        <p className="auth-help">Ask the project team for the demo password.</p>
+        <div className="alert alert-warn" style={{alignItems:'center'}}><ShieldCheck size={16} aria-hidden="true"/><span className="inline-gap">Not Microsoft SSO<Tip text="Demo accounts only. Never enter your university password here."/></span></div>
       </div>
     </main>
   </div>;

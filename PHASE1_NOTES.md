@@ -135,11 +135,31 @@
 
 - **What changed:** Every page has a new look: login, student dashboard, check-in and its result, instructor class list, live board, projector view and admin. Only the look changed. API routes, the database, the QR logic, the scanner, the location rules and the polling are the same.
 - **Light or dark:** Light, because classrooms are bright and students use cheap phones in daylight. The projector stays dark around a pure white QR for the strongest contrast.
-- **Type:** Geist for text and Geist Mono for every number, time and ID. All digits use tabular figures, so numbers never jump when they change. The fonts come from `next/font` (built into Next.js), so there is no new dependency.
+- **Type:** Geist for text and for big numbers; Geist Mono only for small data such as times, IDs and codes. All digits use tabular figures, so numbers never jump when they change. The fonts come from `next/font` (built into Next.js), so there is no new dependency.
 - **Motion:** Numbers count up, bars grow, cards rise in one after another, live-feed rows slide in, the countdown ring turns smoothly, buttons react when pressed, and loading pages show grey skeletons. Pages cross-fade with the View Transitions API where the browser supports it. Everything uses CSS or `requestAnimationFrame`. With "reduce motion" turned on, all motion stops.
 - **The QR is never touched:** The QR image never animates, blurs, scales or fades, and nothing covers it. The countdown ring sits around it, outside the code. The "QR closed / reopened" notice on the projector now appears in the side panel, so it no longer covers the QR. The server still draws the QR in navy, so the page swaps that one colour to pure black when it shows the image (`pureBlackQr.ts`). The code itself does not change.
 - **Check-in page stays light:** While the camera runs, the check-in page has no animation, so the scanner stays fast on cheap Android phones. The success moment (a disc pops in, two waves ripple out and the tick draws itself) plays once, after the camera has stopped.
-- **Phones:** Every page was checked at 390 px and 1440 px with no sideways scrolling. On phones the header is one row, the three-number rows stay compact, and the attendance history becomes cards.
+- **Phones:** Every page was checked at 390 px and 1440 px with no sideways scrolling. On phones the header is one row, the three-number rows stay compact, and the attendance history is one short row per record.
 - **Kept:** There is no university logo; the mark is three "scan" rings. The "Not an official EUI system" notice is on every page, including the login page and the projector.
 - **Files:** `app/globals.css` (the whole design system), `app/layout.tsx` (fonts), `components/Shell.tsx`, `components/CountUp.tsx`, `components/PageSkeleton.tsx`, every page under `app/`, the `loading.tsx` files, and `app/instructor/session/[id]/pureBlackQr.ts`.
 - **How to demo:** Open the login page, then the live board and the projector side by side. Press `Shift+C` on the projector and watch the notice appear beside the QR. Check in from a phone to see the success moment and the live feed update.
+
+## Final pass (19 October 2026, branch `redesign-premium`)
+
+- **Less text:** About 70% of the words are gone. Each page has a title and nothing more. Number cards show a label and a number, with no line under it. Long explanations (security, privacy, QR rotation, location, audits) are removed. Where a short note must stay, it is one line, and the extra detail sits in a small (i) tooltip.
+- **Pages:**
+  - **Login:** one line under the brand: "Student prototype · Not an official EUI system". The SSO warning is one line with an (i).
+  - **Student:** the "How check-in works" card is gone. The history is one row per record: class, date, status.
+  - **Check-in:** one centred card. One quiet line at the bottom: "Codes rotate every 8 s · Location checked by server".
+  - **Live board:** short buttons (Projector, Close QR, End). The room bar reads "Room ±11 m". Without a room location it reads "No room location · check-ins go to review", with a button. On phones the QR is smaller, so the counter is visible without scrolling. The projector QR keeps its full size.
+  - **Instructor:** the newest 5 sessions, with "Show all" for the rest.
+  - **Admin:** "Risk is not proof" with an (i).
+  - **Projector:** only the text was shortened.
+- **Numbers:** Big numbers use the same sans font as the text (weight 650, tight spacing, tabular digits). Only small data such as times and IDs uses the mono font. The type now uses three weights: 400, 500 and 650.
+- **Status colours:** The same everywhere: green = verified, amber = needs review, red = refused or rejected, neutral (grey or black) = manual.
+- **Bug: double badge.** The live feed showed "Manual · Manual" for an assisted check-in. Now it shows one badge: "Late" when the student was late, plus the check type (Verified, Needs review or Manual). Fixed in `LiveBoard.tsx`; no API change.
+- **Bug: admin numbers showed 0.** The number cards could stay at 0 (for example "Open alerts 0" while the tab said "Review 2", and "Classes 0"). The database queries were right. The count-up animation stopped when the browser paused animation frames (a hidden tab or a slow phone), so the number stayed at 0. Now a timer always shows the real number at the end, and a hidden tab or "reduce motion" shows it at once. Fixed in `components/CountUp.tsx`; no API or logic change.
+- **Demo data:** On the shared database, 8 old "New lecture" sessions were still active (CS301 ×6, CS314 ×2). They were ended the same way as the "End session" button does: state "ended", an end time, and one audit entry each. No rows were deleted. Only "Demo live attendance" (CS301) is still active.
+- **Not changed:** API routes, the database schema, the QR logic, the scanner, the location rules and the polling.
+- **Files:** `app/globals.css`, `components/Shell.tsx`, `components/CountUp.tsx`, `components/Tip.tsx` (new), `app/instructor/SessionList.tsx` (new), and the page files under `app/login`, `app/student`, `app/checkin`, `app/instructor` and `app/admin`.
+- **How to demo:** Open the student page on a phone: title, live card, three numbers, short history. Open the live board on a phone: the counter is visible under the QR without scrolling. On the admin page, move the mouse over the (i) next to "Risk is not proof".

@@ -25,7 +25,7 @@ function measureRoom(onProgress:(accuracy:number)=>void):Promise<{lat:number,lon
       err=>{if(err.code===err.PERMISSION_DENIED){finish();reject(new Error('Location permission was denied.'));}},
       {enableHighAccuracy:true,maximumAge:0,timeout:20000});
     const timer=setTimeout(()=>{finish();if(best)resolve({lat:best.latitude,lon:best.longitude,accuracy:best.accuracy});
-      else reject(new Error('No location reading in 10 seconds. Try again from a phone inside the classroom.'));},10000);
+      else reject(new Error('No location in 10 s. Try from a phone in the room.'));},10000);
   });
 }
 
@@ -57,7 +57,7 @@ export function LiveBoard({sessionId,initiallyActive}:{sessionId:string,initiall
 
   async function act(run:()=>Promise<unknown>){setBusy(true);setError('');try{await run();refresh();}catch(e){setError(e instanceof Error?e.message:'Something went wrong.');}finally{setBusy(false);}}
   const toggleQr=()=>act(()=>postJson(`/api/sessions/${sessionId}/qr`,{open:qrClosed}));
-  const end=()=>{if(confirm('End this session? Scanning and assisted check-in stop. Later fixes go through correction requests.'))act(()=>postJson(`/api/sessions/${sessionId}/close`,{}));};
+  const end=()=>{if(confirm('End this session? Scanning stops.'))act(()=>postJson(`/api/sessions/${sessionId}/close`,{}));};
   async function setRoom(){
     setMeasuring('started');setError('');
     try{const r=await measureRoom(a=>setMeasuring(a));await postJson(`/api/sessions/${sessionId}/anchor`,r);refresh();}
@@ -73,7 +73,7 @@ export function LiveBoard({sessionId,initiallyActive}:{sessionId:string,initiall
   async function addManual(e:FormEvent){
     e.preventDefault();if(!picked)return;setBusy(true);setMessage('');
     try{await postJson(`/api/sessions/${sessionId}/manual`,{studentId:picked.id,reason});
-      setMessageOk(true);setMessage(`${picked.name} was added and the action was audited.`);setPicked(null);setSearch('');setReason('');refresh();}
+      setMessageOk(true);setMessage(`${picked.name} added.`);setPicked(null);setSearch('');setReason('');refresh();}
     catch(err){setMessageOk(false);setMessage(err instanceof Error?err.message:'Failed');}finally{setBusy(false);}
   }
   async function submitReview(e:FormEvent){
@@ -94,8 +94,8 @@ export function LiveBoard({sessionId,initiallyActive}:{sessionId:string,initiall
   const seconds=Math.ceil(remainingMs/1000);
 
   const reviewForm=(r:RosterRow)=>reviewing?.id===r.id&&<form className="review-form" onSubmit={submitReview}>
-    <div className="field"><label className="label" htmlFor={`rv-${r.id}`}>{reviewing.action==='confirm'?'Why are you confirming this check-in?':'Why is this student absent? This removes the record.'}</label>
-      <input id={`rv-${r.id}`} className="input" value={reviewReason} onChange={e=>setReviewReason(e.target.value)} minLength={10} maxLength={500} required placeholder="Reason (at least 10 characters)" autoFocus/></div>
+    <div className="field"><label className="label" htmlFor={`rv-${r.id}`}>{reviewing.action==='confirm'?'Reason':'Reason · removes the record'}</label>
+      <input id={`rv-${r.id}`} className="input" value={reviewReason} onChange={e=>setReviewReason(e.target.value)} minLength={10} maxLength={500} required placeholder="At least 10 characters" autoFocus/></div>
     <div className="chips">{REVIEW_REASONS[reviewing.action].map(t=><button type="button" key={t} className="chip" onClick={()=>setReviewReason(t)}>{t}</button>)}</div>
     <div className="row-wrap"><button className={reviewing.action==='confirm'?'btn btn-primary btn-sm':'btn btn-danger btn-sm'} disabled={busy||reviewReason.trim().length<10}>{reviewing.action==='confirm'?'Confirm':'Mark absent'}</button>
       <button type="button" className="btn btn-ghost btn-sm" onClick={()=>setReviewing(null)}>Cancel</button></div>
@@ -105,12 +105,12 @@ export function LiveBoard({sessionId,initiallyActive}:{sessionId:string,initiall
     <div className="board-bar reveal">
       <div className="board-status">
         <StateBadge value={ended?'ended':qrClosed?'qr_closed':'active'}/>
-        {!ended&&<span className="row-wrap"><span className="live-dot"/>Live · updates every 2 s</span>}
+        {!ended&&<span className="row-wrap"><span className="live-dot"/>Live</span>}
       </div>
       {!ended&&<div className="row-wrap">
-        <Link className="btn btn-secondary" href={`/instructor/session/${sessionId}/present`} target="_blank"><MonitorPlay size={16} aria-hidden="true"/>Open projector view</Link>
+        <Link className="btn btn-secondary" href={`/instructor/session/${sessionId}/present`} target="_blank"><MonitorPlay size={16} aria-hidden="true"/>Projector</Link>
         <button type="button" className="btn btn-secondary" onClick={toggleQr} disabled={busy||!challenge}>{qrClosed?<><Unlock size={16} aria-hidden="true"/>Reopen QR</>:<><Lock size={16} aria-hidden="true"/>Close QR</>}</button>
-        <button type="button" className="btn btn-danger" onClick={end} disabled={busy}><Square size={14} aria-hidden="true"/>End session</button>
+        <button type="button" className="btn btn-danger" onClick={end} disabled={busy}><Square size={14} aria-hidden="true"/>End</button>
       </div>}
     </div>
     {error&&<div className="alert alert-error" role="alert" style={{marginBottom:16}}><AlertTriangle size={16} aria-hidden="true"/><span>{error}</span></div>}
@@ -123,25 +123,23 @@ export function LiveBoard({sessionId,initiallyActive}:{sessionId:string,initiall
             <circle className="track" cx="50" cy="50" r={RING_R} strokeWidth="2.4"/>
             <circle className="fill" cx="50" cy="50" r={RING_R} strokeWidth="2.4" strokeDasharray={RING_C} strokeDashoffset={RING_C*(1-fraction)}/>
           </svg>}
-          {ended?<div className="qr-empty"><CheckCheck size={30} aria-hidden="true"/><b>Session ended</b><span>Scanning and assisted check-in are closed.</span></div>
-            :qrClosed?<div className="qr-empty"><Lock size={28} aria-hidden="true"/><b>QR closed</b><span>Students cannot scan. You can still add students.</span></div>
+          {ended?<div className="qr-empty"><CheckCheck size={30} aria-hidden="true"/><b>Session ended</b></div>
+            :qrClosed?<div className="qr-empty"><Lock size={28} aria-hidden="true"/><b>QR closed</b></div>
             :qrSrc?<div className="qr-frame"><img className="qr-img" src={qrSrc} alt="Current rotating attendance QR" width={240} height={240}/></div>
-            :<div className="qr-empty"><RefreshCw size={26} className="spin" aria-hidden="true"/><span>Loading secure QR…</span></div>}
+            :<div className="qr-empty"><RefreshCw size={26} className="spin" aria-hidden="true"/><span>Loading…</span></div>}
         </div>
         {!ended&&!qrClosed&&<div className="qr-caption" aria-live="off">
           <b>Next code in <span className="num">{seconds} s</span></b>
-          <span>{challenge?.intervalSeconds?`Server-issued · a new code every ${challenge.intervalSeconds} s`:'Server-issued'}</span>
         </div>}
-        {!ended&&(measuring!==null?<div className="anchor"><span><Loader2 size={16} className="spin" aria-hidden="true"/>Measuring room location… {typeof measuring==='number'&&<span className="num">±{Math.round(measuring)} m</span>}</span></div>
-          :live?.anchor?<div className="anchor good"><span><MapPin size={16} aria-hidden="true"/>Room location set · <span className="num">±{Math.round(live.anchor.accuracyM)} m</span></span><button type="button" className="link" onClick={setRoom} disabled={busy}>Update</button></div>
-          :live&&<div className="alert alert-warn" style={{flexDirection:'column',gap:10}}><span><b>Without room location, every check-in goes to review.</b> Set it from a phone inside the classroom.</span><button type="button" className="btn btn-secondary btn-sm" onClick={setRoom} disabled={busy}><MapPin size={15} aria-hidden="true"/>Set room location</button></div>)}
-        <p className="hint">Students scan this code with the scanner inside the website. It holds no link, so forwarding it opens nothing. One record per student.</p>
+        {!ended&&(measuring!==null?<div className="anchor"><span><Loader2 size={16} className="spin" aria-hidden="true"/>Measuring… {typeof measuring==='number'&&<span className="num">±{Math.round(measuring)} m</span>}</span></div>
+          :live?.anchor?<div className="anchor good"><span><MapPin size={16} aria-hidden="true"/>Room <span className="num">±{Math.round(live.anchor.accuracyM)} m</span></span><button type="button" className="link" onClick={setRoom} disabled={busy}>Update</button></div>
+          :live&&<div className="alert alert-warn" style={{flexDirection:'column',gap:10}}><span>No room location · check-ins go to review</span><button type="button" className="btn btn-secondary btn-sm" onClick={setRoom} disabled={busy}><MapPin size={15} aria-hidden="true"/>Set location</button></div>)}
       </section>
 
       <div className="board-main">
         <section className="card count-card reveal" style={{'--i':1} as React.CSSProperties} aria-label="Check-in count">
           {live?<>
-            <div className="count-big"><CountUp value={counts!.attended} className=""/><span>of <span className="num">{counts!.roster}</span> students checked in{late?` · ${late} late`:''}</span></div>
+            <div className="count-big"><CountUp value={counts!.attended} className=""/><span>of <span className="num">{counts!.roster}</span> checked in{late?<> · <span className="num">{late}</span> late</>:null}</span></div>
             <div className="stackbar" aria-hidden="true">
               <span className="sw-verified" style={{flexGrow:verified}}/>
               <span className="sw-review" style={{flexGrow:counts!.needsReview}}/>
@@ -159,17 +157,17 @@ export function LiveBoard({sessionId,initiallyActive}:{sessionId:string,initiall
 
         <div className="grid grid-2">
           <section className="card card-pad reveal" style={{'--i':2} as React.CSSProperties} aria-label="Live feed">
-            <SectionHeader title="Live feed" note="Latest check-ins"/>
+            <SectionHeader title="Live feed"/>
             <div className="rows">{(live?.recent??[]).map(r=><div className="row feed-item" key={r.name+r.checkedInAt}>
-              <span className="row-main"><span className="row-title">{r.name}</span><time className="row-sub num">{time(r.checkedInAt)}</time></span>
-              <span className="row-end">{r.status!=='present'&&<StateBadge value={r.status}/>}{r.verification!=='manual'&&<StateBadge value={r.verification}/>}{r.verification==='manual'&&<StateBadge value="manual"/>}</span>
+              <span className="row-main"><span className="row-title">{r.name}</span><time className="row-sub">{time(r.checkedInAt)}</time></span>
+              <span className="row-end">{r.status==='late'&&<StateBadge value="late"/>}<StateBadge value={r.verification==='manual'?'manual':r.verification}/></span>
             </div>)}</div>
-            {live&&!live.recent.length&&<p className="empty">No check-ins yet. They appear here within 2 seconds.</p>}
+            {live&&!live.recent.length&&<p className="empty">No check-ins yet.</p>}
             {!live&&<div className="stack" style={{gap:10}}>{[0,1,2].map(i=><div key={i} className="skeleton" style={{height:20}}/>)}</div>}
           </section>
 
           <section className="card card-pad reveal" style={{'--i':3} as React.CSSProperties} aria-label="Needs review">
-            <SectionHeader title="Needs review" note="Confirm or mark absent" aside={pending.length?<span className="badge badge-needs_review plain">{pending.length} waiting</span>:undefined}/>
+            <SectionHeader title="Needs review" aside={pending.length?<span className="badge badge-needs_review plain num">{pending.length}</span>:undefined}/>
             <div className="stack" style={{gap:10}}>{pending.map(r=><div className="review-item" key={r.id}>
               <div className="top"><span className="row-title">{r.name}</span><time className="small muted">{time(r.checkedInAt)}</time></div>
               <span className="why">{LOCATION_TEXT[r.location??'']||r.location||'Needs a check'}{r.distanceM!=null?<> · <span className="num">{Math.round(r.distanceM)} m</span> from room</>:null}</span>
@@ -178,38 +176,38 @@ export function LiveBoard({sessionId,initiallyActive}:{sessionId:string,initiall
                 <button type="button" className="btn btn-secondary btn-sm" onClick={()=>startReview(r.id,'absent','review')}>Mark absent</button>
               </div>}
             </div>)}</div>
-            {live&&!pending.length&&<p className="empty">Nothing to review right now.</p>}
+            {live&&!pending.length&&<p className="empty">Nothing to review.</p>}
           </section>
         </div>
 
         {!ended&&<section className="card card-pad reveal" style={{'--i':4} as React.CSSProperties} aria-labelledby="assist-title">
-          <div className="card-head"><div><h2 className="card-title" id="assist-title">Assisted check-in</h2><p className="card-sub">For a student without a working phone. Works with the QR open or closed. Every addition needs a reason and is audited.</p></div></div>
+          <div className="card-head"><h2 className="card-title" id="assist-title">Assisted check-in</h2></div>
           <form className="form" onSubmit={addManual}>
-            {picked?<div className="picked"><span className="row-main"><span className="row-title">{picked.name}</span><span className="row-sub num">{picked.number||'No student number'}</span></span><button type="button" className="btn btn-ghost btn-sm btn-icon" onClick={()=>setPicked(null)} aria-label="Choose another student"><X size={16}/></button></div>
-              :<div className="field"><label className="label" htmlFor="assist-find">Find student</label>
+            {picked?<div className="picked"><span className="row-main"><span className="row-title">{picked.name}</span><span className="row-sub mono">{picked.number||'No student number'}</span></span><button type="button" className="btn btn-ghost btn-sm btn-icon" onClick={()=>setPicked(null)} aria-label="Choose another student"><X size={16}/></button></div>
+              :<div className="field"><label className="label" htmlFor="assist-find">Student</label>
                 <div className="input-wrap"><Search size={16} aria-hidden="true"/><input id="assist-find" className="input" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Name or student number" autoComplete="off"/></div>
-                {search.trim()&&<div className="results">{matches.map(m=><button type="button" key={m.id} className="result-btn" onClick={()=>{setPicked(m);setSearch('');}}><b>{m.name}</b><span className="num small muted">{m.number||'No student number'}</span></button>)}
-                  {!matches.length&&<span className="hint">No student without a record matches “{search.trim()}”.</span>}</div>}</div>}
-            <div className="field"><label className="label" htmlFor="assist-reason">Reason (required)</label>
-              <textarea id="assist-reason" className="textarea" rows={2} minLength={10} maxLength={500} value={reason} onChange={e=>setReason(e.target.value)} placeholder="Why is this student added by hand?" required/></div>
+                {search.trim()&&<div className="results">{matches.map(m=><button type="button" key={m.id} className="result-btn" onClick={()=>{setPicked(m);setSearch('');}}><b>{m.name}</b><span className="mono small muted">{m.number||'No student number'}</span></button>)}
+                  {!matches.length&&<span className="hint">No match</span>}</div>}</div>}
+            <div className="field"><label className="label" htmlFor="assist-reason">Reason</label>
+              <textarea id="assist-reason" className="textarea" rows={2} minLength={10} maxLength={500} value={reason} onChange={e=>setReason(e.target.value)} placeholder="At least 10 characters" required/></div>
             <div className="chips">{MANUAL_REASONS.map(([label,text])=><button type="button" key={label} className="chip" onClick={()=>setReason(text)}>{label}</button>)}</div>
             {message&&<div className={messageOk?'alert alert-ok':'alert alert-error'} role="status">{message}</div>}
-            <button className="btn btn-primary" style={{alignSelf:'flex-start'}} disabled={busy||!picked||reason.trim().length<10}>Record assisted check-in</button>
+            <button className="btn btn-primary" style={{alignSelf:'flex-start'}} disabled={busy||!picked||reason.trim().length<10}>Add student</button>
           </form>
         </section>}
 
         <section className="card card-pad reveal" style={{'--i':5} as React.CSSProperties} aria-labelledby="roster-title">
           <div className="card-head" style={{flexWrap:'wrap'}}>
-            <div><h2 className="card-title" id="roster-title">Student roster</h2><p className="card-sub">Live · updates every 2 seconds</p></div>
+            <h2 className="card-title" id="roster-title">Roster</h2>
             <div className="segmented" role="group" aria-label="Filter the roster">
-              {([['all','All',counts?.roster],['review','Needs review',counts?.needsReview],['missing','Not checked in',notYet]] as const).map(([k,label,n])=>
+              {([['all','All',counts?.roster],['review','Review',counts?.needsReview],['missing','Not yet',notYet]] as const).map(([k,label,n])=>
                 <button type="button" key={k} aria-pressed={filter===k} onClick={()=>setFilter(k)}>{label}{n!=null&&<span className="count">{n}</span>}</button>)}
             </div>
           </div>
           <div className="rows roster">{shown.map(r=><div key={r.id}>
             <div className="row">
               <span className="row-main"><span className="row-title">{r.name}</span>
-                <span className="row-sub"><span className="num">{r.number||'Demo student'}</span>{r.checkedInAt?<> · <time className="num">{time(r.checkedInAt)}</time></>:null}{r.verification==='needs_review'&&r.location?` · ${LOCATION_TEXT[r.location]||r.location}`:''}</span></span>
+                <span className="row-sub"><span className="mono">{r.number||'Demo student'}</span>{r.checkedInAt?<> · <time>{time(r.checkedInAt)}</time></>:null}{r.verification==='needs_review'&&r.location?` · ${LOCATION_TEXT[r.location]||r.location}`:''}</span></span>
               <span className="row-end"><RecordChips r={r}/>
                 {r.status&&reviewing?.id!==r.id&&<span className="row-wrap">
                   {r.verification==='needs_review'&&<button type="button" className="link" onClick={()=>startReview(r.id,'confirm','roster')}>Confirm</button>}
@@ -218,7 +216,7 @@ export function LiveBoard({sessionId,initiallyActive}:{sessionId:string,initiall
             </div>
             {reviewing?.where==='roster'&&reviewForm(r)}
           </div>)}</div>
-          {live&&!shown.length&&<p className="empty">No students in this list.</p>}
+          {live&&!shown.length&&<p className="empty">No students here.</p>}
           {!live&&<div className="stack" style={{gap:12}}>{[0,1,2,3].map(i=><div key={i} className="skeleton" style={{height:22}}/>)}</div>}
         </section>
       </div>

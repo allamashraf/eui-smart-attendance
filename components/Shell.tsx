@@ -23,8 +23,7 @@ export function BrandMark({size=28}:{size?:number}){
 
 export function SiteFooter(){
   return <footer className="site-footer">
-    <span>EUI Smart Attendance · student project prototype. <b>Not an official EUI system.</b></span>
-    <span>All records are synthetic demo data.</span>
+    <span>Student prototype · Not an official EUI system</span>
   </footer>;
 }
 
@@ -45,7 +44,7 @@ export function Shell({user,active,heading,subtitle,eyebrow,aside,calm=false,chi
     </div></header>
     <main id="main" className="page">
       <div className={calm?'page-head':'page-head reveal'}>
-        <div><span className="eyebrow">{eyebrow??roleLabel[user.role]}</span><h1 className="page-title">{heading}</h1>{subtitle&&<p className="page-sub">{subtitle}</p>}</div>
+        <div>{eyebrow&&<span className="eyebrow">{eyebrow}</span>}<h1 className="page-title">{heading}</h1>{subtitle&&<p className="page-sub">{subtitle}</p>}</div>
         {aside}
       </div>
       {children}
@@ -55,11 +54,10 @@ export function Shell({user,active,heading,subtitle,eyebrow,aside,calm=false,chi
 }
 
 // A number tile. Numbers count up; `i` staggers the entrance.
-export function Stat({label,value,note,Icon,i=0}:{label:string,value:string|number,note?:string,Icon:LucideIcon,i?:number}){
+export function Stat({label,value,Icon,i=0}:{label:string,value:string|number,Icon:LucideIcon,i?:number}){
   return <div className="card stat reveal" style={{'--i':i} as React.CSSProperties}>
     <div className="stat-top"><span>{label}</span><span className="stat-icon"><Icon size={16} aria-hidden="true"/></span></div>
     <div className="stat-value">{typeof value==='number'?<CountUp value={value}/>:value}</div>
-    {note&&<div className="stat-note">{note}</div>}
   </div>;
 }
 

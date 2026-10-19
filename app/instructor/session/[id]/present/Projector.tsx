@@ -76,7 +76,7 @@ export function Projector({sessionId,heading,room,initiallyActive}:{sessionId:st
       <div className={styles.titleBlock}>
         <span className={styles.brand}><BrandMark size={26}/>EUI Attendance</span>
         <h1>{heading}</h1>
-        <p>{room}{room?' · ':''}Open <b>Check in</b> on the EUI Attendance website and scan with its camera</p>
+        <p>{room}{room?' · ':''}Open <b>Check in</b> and scan</p>
       </div>
       <button type="button" className={styles.fsButton} onClick={toggleFullscreen} aria-label="Fullscreen (Shift+F)"><Maximize size={20}/></button>
     </header>
@@ -84,7 +84,7 @@ export function Projector({sessionId,heading,room,initiallyActive}:{sessionId:st
       {/* The QR card never animates, blurs, scales, fades or gets covered. */}
       <div className={styles.qrArea}>
         {ended?<div className={styles.bigState}><CheckCheck size={64} aria-hidden="true"/><b>Session ended</b></div>
-          :closed?<div className={styles.bigState}><Lock size={64} aria-hidden="true"/><b>Check-in closed</b><span>Ask your instructor if you could not scan.</span></div>
+          :closed?<div className={styles.bigState}><Lock size={64} aria-hidden="true"/><b>Check-in closed</b></div>
           :qrSrc?<img className={styles.qr} src={qrSrc} alt="Attendance QR code"/>
           :<div className={styles.bigState}><RefreshCw size={48} className="spin" aria-hidden="true"/><span>Loading…</span></div>}
       </div>
@@ -109,6 +109,6 @@ export function Projector({sessionId,heading,room,initiallyActive}:{sessionId:st
         {error&&<p className={styles.error}>{error}</p>}
       </aside>
     </main>
-    <footer className={styles.footer}><span><kbd>Shift</kbd>+<kbd>F</kbd> fullscreen</span><span><kbd>Shift</kbd>+<kbd>C</kbd> {closed?'reopen':'close'} QR</span>{busy&&<span>saving…</span>}<span className={styles.footNote}>Student project prototype · Not an official EUI system</span></footer>
+    <footer className={styles.footer}><span><kbd>Shift</kbd>+<kbd>F</kbd> fullscreen</span><span><kbd>Shift</kbd>+<kbd>C</kbd> {closed?'reopen':'close'} QR</span>{busy&&<span>saving…</span>}<span className={styles.footNote}>Student prototype · Not an official EUI system</span></footer>
   </div>;
 }

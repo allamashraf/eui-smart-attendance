@@ -1,7 +1,7 @@
 'use client';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import Link from 'next/link';
-import {MapPin,ShieldCheck,AlertTriangle,RotateCcw,Loader2,ArrowRight,Info,ScanLine,Timer} from 'lucide-react';
+import {MapPin,AlertTriangle,RotateCcw,Loader2,Info} from 'lucide-react';
 import {StateBadge,displayTime} from '@/components/Shell';
 import {QrScanner,type ScannerProblem} from './QrScanner';
 
@@ -12,21 +12,21 @@ const FRESH_MS=30000;      // only readings from the last 30 s are used
 const SLOW_MS=20000;       // after 20 s without any reading, tell the student plainly
 // Server answers that mean "this code is not usable, keep scanning for the current one".
 const RESCAN:Record<string,string>={
-  expired:'That code had just changed. Hold your phone steady on the screen…',
-  invalid_qr:'That is not the current attendance code. Scanning again…',
-  not_issued:'That is not the current attendance code. Scanning again…',
+  expired:'Code just changed · hold steady…',
+  invalid_qr:'Not the current code · scanning again…',
+  not_issued:'Not the current code · scanning again…',
 };
 const CAMERA_PROBLEM:Record<ScannerProblem,string>={
-  denied:'Camera access was blocked. Allow the camera for this site in your browser settings and try again, or ask your instructor for assisted check-in.',
-  no_camera:'No camera was found on this device. Ask your instructor for assisted check-in.',
-  insecure:'The camera only works on a secure (https) page. Ask your instructor for assisted check-in.',
-  failed:'The camera could not start. Close other apps that use the camera and try again, or ask your instructor for assisted check-in.',
+  denied:'Allow the camera in your browser settings, or ask your instructor.',
+  no_camera:'No camera found. Ask your instructor.',
+  insecure:'The camera needs a secure (https) page. Ask your instructor.',
+  failed:'Close other camera apps and try again, or ask your instructor.',
 };
 const LOCATION_NOTE:Record<string,string>={
-  inside:'Your location matched the classroom.',
-  uncertain:'Your location was not precise or close enough to confirm, so your instructor will review this check-in.',
-  no_location:'No location was shared, so your instructor will review this check-in.',
-  no_anchor:'The room location was not set yet, so your instructor will review this check-in.',
+  inside:'Location matched the room.',
+  uncertain:'Location unclear · your instructor will review.',
+  no_location:'No location · your instructor will review.',
+  no_anchor:'No room location yet · your instructor will review.',
 };
 
 // The best reading is the most precise one (smallest ± metres) from the last 30 seconds.
@@ -39,7 +39,7 @@ function deviceId(){
   catch{return undefined;}
 }
 
-export function CheckinClient({intervalSeconds,graceSeconds}:{intervalSeconds:number,graceSeconds:number}){
+export function CheckinClient({intervalSeconds}:{intervalSeconds:number}){
   const[outcome,setOutcome]=useState<Outcome|null>(null);
   const[scanning,setScanning]=useState(true);
   const[note,setNote]=useState('');
@@ -79,10 +79,10 @@ export function CheckinClient({intervalSeconds,graceSeconds}:{intervalSeconds:nu
       if(res.ok)return finish({kind:'success',status:data.status,verification:data.verification,location:data.location,at:Date.now()});
       if(RESCAN[data.code]){rejected.current.add(payload);setNote(RESCAN[data.code]);setScanning(true);return;}
       finish({kind:'stop',code:data.code||'error',message:data.error||'Unable to check in.',retry:res.status>=500||data.code==='bad_location'});
-    }catch{finish({kind:'stop',code:'network',message:'No connection to the server. Check your internet and try again.',retry:true});}
+    }catch{finish({kind:'stop',code:'network',message:'No connection. Check your internet.',retry:true});}
     finally{busy.current=false;}
   },[finish]);
-  const onOtherCode=useCallback(()=>setNote('That QR code is not an attendance code. Scan the code on your instructor\'s screen.'),[]);
+  const onOtherCode=useCallback(()=>setNote('Not an attendance code.'),[]);
   const onProblem=useCallback((p:ScannerProblem)=>finish({kind:'stop',code:'camera_'+p,message:CAMERA_PROBLEM[p],retry:p==='denied'||p==='failed'}),[finish]);
   function retry(){rejected.current.clear();setOutcome(null);setNote('');setSlow(false);setScanning(true);}
 
@@ -91,14 +91,13 @@ export function CheckinClient({intervalSeconds,graceSeconds}:{intervalSeconds:nu
 
   // While the camera runs, this page has no animation at all: the phone's power goes to the scanner.
   // Only the result (after the camera has stopped) plays its one-time animation.
-  return <div className="checkin"><div className="card checkin-card">
+  return <div className="checkin-solo"><div className="card checkin-card">
     {!outcome&&<>
-      <div><h2>Scan the code on the screen</h2>
-        <p className="muted" style={{marginTop:6}}>Point your camera at the QR code your instructor is showing. Check-in happens as soon as the code is read.</p></div>
+      <h2>Scan the code</h2>
       <div className={'loc '+(best?(best.accuracy<=150?'good':'weak'):'')} aria-live="polite"><MapPin size={15} aria-hidden="true"/>
-        {best?<span>Location <span className="num">±{Math.round(best.accuracy)} m</span></span>:locState==='denied'?<span>Location is turned off</span>:locState==='unsupported'?<span>This browser cannot share location</span>:<span>Finding your location…</span>}
+        {best?<span>Location <span className="num">±{Math.round(best.accuracy)} m</span></span>:locState==='denied'?<span>Location off</span>:locState==='unsupported'?<span>No location in this browser</span>:<span>Finding location…</span>}
       </div>
-      {noLocation&&<div className="alert alert-warn"><Info size={16} aria-hidden="true"/><span>You can still check in without location. Your instructor will review your check-in.</span></div>}
+      {noLocation&&<div className="alert alert-warn"><Info size={16} aria-hidden="true"/><span>No location · your check-in goes to review</span></div>}
       <div className="scanner-frame">{scanning?<QrScanner active={scanning} onCode={onCode} onOtherCode={onOtherCode} onProblem={onProblem}/>:<div className="scanner-wait"><Loader2 size={28} className="spin" aria-hidden="true"/><span>Checking in…</span></div>}</div>
       <p className="scan-note" aria-live="polite">{note}</p>
     </>}
@@ -108,24 +107,17 @@ export function CheckinClient({intervalSeconds,graceSeconds}:{intervalSeconds:nu
       <div className="badges"><StateBadge value={outcome.status}/><StateBadge value={outcome.verification}/></div>
       <p>{LOCATION_NOTE[outcome.location]||''}</p>
       <time dateTime={new Date(outcome.at).toISOString()}>{displayTime(new Date(outcome.at))}</time>
-      <div className="actions"><Link className="btn btn-primary btn-lg" href="/student">Back to my attendance<ArrowRight size={17} className="arrow" aria-hidden="true"/></Link></div>
+      <div className="actions"><Link className="btn btn-primary btn-lg" href="/student">Done</Link></div>
     </div>}
     {outcome?.kind==='stop'&&<div className="result" role="status">
       {outcome.code==='already'?<ResultMark tone="ok"/>:<div className="result-mark warn"><div className="disc"><AlertTriangle size={36} color="#fff" aria-hidden="true"/></div></div>}
       <h2>{outcome.code==='already'?'Already checked in':outcome.code==='qr_closed'?'Check-in is closed':outcome.code.startsWith('camera_')?'Camera not available':'Check-in not recorded'}</h2>
       <p>{outcome.message}</p>
-      <div className="actions">{outcome.retry&&<button type="button" className="btn btn-primary btn-lg" onClick={retry}><RotateCcw size={16} aria-hidden="true"/>Try again</button>}<Link className="btn btn-secondary btn-lg" href="/student">Back to my attendance</Link></div>
+      <div className="actions">{outcome.retry&&<button type="button" className="btn btn-primary btn-lg" onClick={retry}><RotateCcw size={16} aria-hidden="true"/>Try again</button>}<Link className="btn btn-secondary btn-lg" href="/student">Done</Link></div>
     </div>}
   </div>
-  <aside className="card card-pad" aria-labelledby="protect-title">
-    <h2 className="card-title" id="protect-title" style={{marginBottom:16}}>How your attendance is protected</h2>
-    <ul className="facts">
-      <li><Timer size={18} aria-hidden="true"/><div><b>Codes last <span className="num">{intervalSeconds}</span> seconds</b><span>The code on the screen changes every {intervalSeconds} seconds (plus {graceSeconds} s for slow networks). It holds no link, so a forwarded copy opens nothing.</span></div></li>
-      <li><ScanLine size={18} aria-hidden="true"/><div><b>Scanned inside this website</b><span>Only the live camera can read the code. There is no paste box and no image upload.</span></div></li>
-      <li><MapPin size={18} aria-hidden="true"/><div><b>Location checked by the server</b><span>The server compares your reading with the room. Far away is refused; unclear readings go to your instructor for review.</span></div></li>
-      <li><ShieldCheck size={18} aria-hidden="true"/><div><b>Privacy first</b><span>Your coordinates are not stored, only the distance to the room and the result. Location stops when you leave this page.</span></div></li>
-    </ul>
-  </aside></div>;
+  {!outcome&&<p className="footnote">Codes rotate every <span className="num">{intervalSeconds}</span> s · Location checked by server</p>}
+  </div>;
 }
 
 // The success moment: the disc pops in, two waves ripple out and the tick draws itself. Plays once.
