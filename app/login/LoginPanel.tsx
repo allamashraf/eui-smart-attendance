@@ -28,7 +28,7 @@ export function LoginPanel({nextPath}:{nextPath:string}){
           <circle className="ring-pulse d2" cx="200" cy="200" r="150" fill="none" stroke="rgba(95,211,188,.55)" strokeWidth="1.5"/>
           <circle cx="200" cy="200" r="40" fill="rgba(95,211,188,.12)" stroke="#5FD3BC" strokeWidth="1.5"/>
           <circle cx="200" cy="200" r="7" fill="#5FD3BC"/>
-          <circle cx="252" cy="168" r="9" fill="#FFFFFF" stroke="#0E1113" strokeWidth="3"/>
+          <circle cx="252" cy="168" r="9" fill="#FFFFFF" stroke="#001433" strokeWidth="3"/>
         </svg>
       </div>
       <div className="auth-copy">
