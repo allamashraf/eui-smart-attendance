@@ -1,4 +1,4 @@
-import {Users,BookOpen,ClipboardCheck} from 'lucide-react';
+import {Users,BookOpen,ClipboardCheck,ShieldAlert} from 'lucide-react';
 import {requireUser} from '@/lib/auth';import {query} from '@/lib/db';
 import {Shell,Stat,SectionHeader,displayDate} from '@/components/Shell';
 import {Tip} from '@/components/Tip';
