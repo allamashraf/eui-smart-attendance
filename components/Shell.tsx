@@ -1,12 +1,12 @@
 import Link from 'next/link';
-import {BookOpen,GraduationCap,LayoutDashboard,ScanLine,type LucideIcon} from 'lucide-react';
+import {BookOpen,GraduationCap,LayoutDashboard,ScanLine,ShieldAlert,type LucideIcon} from 'lucide-react';
 import type {AppUser} from '@/lib/auth';
 import {LogoutButton} from './LogoutButton';
 import {CountUp} from './CountUp';
 
 const menus:Record<AppUser['role'],{url:string,label:string,Icon:LucideIcon}[]>={
   student:[{url:'/student',label:'My attendance',Icon:GraduationCap},{url:'/checkin',label:'Check in',Icon:ScanLine}],
-  instructor:[{url:'/instructor',label:'My classes',Icon:BookOpen}],
+  instructor:[{url:'/instructor',label:'My classes',Icon:BookOpen},{url:'/instructor/alerts',label:'Security alerts',Icon:ShieldAlert}],
   admin:[{url:'/admin',label:'Control center',Icon:LayoutDashboard}],
 };
 const roleLabel:Record<AppUser['role'],string>={student:'Student',instructor:'Instructor',admin:'Administrator'};
@@ -65,7 +65,7 @@ export function SectionHeader({title,note,aside}:{title:string,note?:string,asid
   return <div className="card-head"><div><h2 className="card-title">{title}</h2>{note&&<p className="card-sub">{note}</p>}</div>{aside}</div>;
 }
 
-const badgeText:Record<string,string>={needs_review:'Needs review',qr_closed:'QR closed',not_collected:'Not collected'};
+const badgeText:Record<string,string>={verified:'Location matched',needs_review:'Needs review',qr_closed:'QR closed',not_collected:'Not collected'};
 export function StateBadge({value}:{value:string}){
   const text=badgeText[value]??value.charAt(0).toUpperCase()+value.slice(1).replace(/_/g,' ');
   return <span className={'badge badge-'+value.toLowerCase()}>{text}</span>;
