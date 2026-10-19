@@ -8,6 +8,20 @@ The source repository belongs to another owner. This work is on branch `security
 
 On GitHub: use **Fork** on `allamashraf/eui-smart-attendance`. Under your own fork, sync/import that security branch, then optionally make it the default. Alternatively use GitHub **Import repository** with the original HTTPS Git URL, then cherry-pick the branch changes from the source repository. Confirm that your new repository has the instructor alert files and security migration. A new repository cannot be created automatically with this integration.
 
+### Easiest way to create your own **separate** repository (Windows PowerShell)
+
+Install **Git** and **GitHub CLI** (`gh`), then authenticate with `gh auth login` and run:
+
+```powershell
+git clone --branch security-instructor-alerts-2026 --single-branch https://github.com/allamashraf/eui-smart-attendance.git eui-smart-attendance-secure
+cd eui-smart-attendance-secure
+git remote remove origin
+git branch -m main
+gh repo create eui-smart-attendance-secure --private --source=. --remote=origin --push
+```
+
+This creates a new repository **owned by your signed-in GitHub account** and publishes the updated branch as its `main`. It does not alter the original repository. If you prefer a public repository, replace `--private` with `--public` (avoid committing secrets or real student data).
+
 ## 2. Create the database (Supabase/PostgreSQL)
 
 1. Create a new project at https://supabase.com/dashboard and save its database password.
