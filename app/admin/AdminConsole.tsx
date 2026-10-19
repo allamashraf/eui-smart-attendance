@@ -1,26 +1,23 @@
 'use client';
 import {useState,type FormEvent} from 'react';
-import {ArrowRight,Plus,ShieldCheck,UserPlus} from 'lucide-react';
+import {ArrowRight,Plus,UserPlus} from 'lucide-react';
 import {StateBadge} from '@/components/Shell';
-import {Tip} from '@/components/Tip';
 type C={id:string,code:string,title:string,term:string,room:string,instructor:string,enrolled:number};
 type Person={id:string,full_name:string,username?:string};
-type Alert={id:string,code:string,session:string,rule:string,score:number,description:string,evidence:any,state:string,demo:boolean,student?:string,created:string,outcome?:string,reviewNotes?:string};
 type Correction={id:string,student:string,code:string,session:string,reason:string,status:string,created:string};
 async function post(path:string,data:Record<string,unknown>){const r=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});const d=await r.json();if(!r.ok)throw new Error(d.error||'Request failed');return d;}
-export function AdminConsole({instructors,students,classes,alerts,corrections}:{instructors:Person[],students:Person[],classes:C[],alerts:Alert[],corrections:Correction[]}){
-  const[tab,setTab]=useState<'classes'|'reviews'|'corrections'>('classes');
+export function AdminConsole({instructors,students,classes,corrections}:{instructors:Person[],students:Person[],classes:C[],corrections:Correction[]}){
+  const[tab,setTab]=useState<'classes'|'corrections'>('classes');
   const[code,setCode]=useState('CS302'),[title,setTitle]=useState('Demo Software Engineering'),[term,setTerm]=useState('Fall 2026'),[room,setRoom]=useState('Hall C1');
   const[instructorId,setInstructorId]=useState(instructors[0]?.id||''),[studentId,setStudentId]=useState(students[0]?.id||''),[subjectId,setSubjectId]=useState(classes[0]?.id||'');
   const[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[ok,setOk]=useState(true);
   const[note,setNote]=useState('Reviewed the synthetic evidence and classroom context.');
   async function submit(e:FormEvent,action:()=>Promise<unknown>){e.preventDefault();setBusy(true);setMessage('');try{await action();setOk(true);setMessage('Saved. Refreshing…');setTimeout(()=>window.location.reload(),750);}catch(err){setOk(false);setMessage(err instanceof Error?err.message:'Unable to save');setBusy(false)}}
-  const openAlerts=alerts.filter(a=>a.state==='open').length,pending=corrections.filter(c=>c.status==='pending').length;
+  const pending=corrections.filter(c=>c.status==='pending').length;
   return <>
     <div className="card-head">
       <div className="segmented" role="group" aria-label="Section">
         <button type="button" aria-pressed={tab==='classes'} onClick={()=>setTab('classes')}>Classes</button>
-        <button type="button" aria-pressed={tab==='reviews'} onClick={()=>setTab('reviews')}>Review<span className="count">{openAlerts}</span></button>
         <button type="button" aria-pressed={tab==='corrections'} onClick={()=>setTab('corrections')}>Corrections<span className="count">{pending}</span></button>
       </div>
     </div>
@@ -55,8 +52,6 @@ export function AdminConsole({instructors,students,classes,alerts,corrections}:{
       </table></div>
     </div>}
 
-    {tab==='reviews'&&<div className="grid grid-2 fade-in">{alerts.map(a=><ReviewCard key={a.id} alert={a} busy={busy} note={note} setNote={setNote} submit={(e,outcome)=>submit(e,()=>post(`/api/admin/alerts/${a.id}/review`,{outcome,notes:note}))}/>)}{alerts.length===0&&<p className="empty">No alerts.</p>}</div>}
-
     {tab==='corrections'&&<div className="grid grid-2 fade-in">{corrections.map(c=><div className="inset stack" style={{gap:10}} key={c.id}>
       <div className="row-wrap" style={{justifyContent:'space-between'}}><b>{c.code} · {c.session}</b><StateBadge value={c.status}/></div>
       <p className="small"><span className="muted">Student</span> · {c.student}</p>
@@ -68,19 +63,4 @@ export function AdminConsole({instructors,students,classes,alerts,corrections}:{
       </form>}
     </div>)}{corrections.length===0&&<p className="empty">No requests.</p>}</div>}
   </>;
-}
-function ReviewCard({alert:a,busy,note,setNote,submit}:{alert:Alert,busy:boolean,note:string,setNote:(s:string)=>void,submit:(e:FormEvent,outcome:string)=>void}){
-  const[outcome,setOutcome]=useState('inconclusive');
-  return <div className="inset risk">
-    <div className="row-wrap" style={{justifyContent:'space-between'}}><span className="row-wrap"><b>{a.code} · {a.session}</b>{a.demo&&<span className="badge plain">Synthetic</span>}</span><StateBadge value={a.state}/></div>
-    <div className="risk-score"><span className="row-wrap"><ShieldCheck size={15} aria-hidden="true"/>Priority<Tip text="Possible innocent causes: a shared lab device, a classroom demo, a student helping a classmate. A person must check the evidence."/></span><span><b>{a.score}</b> / 100</span></div>
-    <div className="meter" aria-hidden="true"><span style={{width:a.score+'%'}}/></div>
-    <p className="small">{a.description}</p>
-    <div className="tags"><span className="tag">Rule {a.rule}</span><span className="tag mono">{a.created}</span>{a.student&&<span className="tag">{a.student}</span>}</div>
-    {a.state==='open'?<form className="form" onSubmit={e=>submit(e,outcome)}>
-      <div className="field"><label className="label" htmlFor={`ro-${a.id}`}>Outcome</label><select id={`ro-${a.id}`} className="select" value={outcome} onChange={e=>setOutcome(e.target.value)}><option value="legitimate">Legitimate</option><option value="inconclusive">Inconclusive</option><option value="confirmed">Confirmed</option></select></div>
-      <div className="field"><label className="label" htmlFor={`rn-${a.id}`}>Notes</label><textarea id={`rn-${a.id}`} className="textarea" minLength={10} maxLength={1000} rows={2} value={note} onChange={e=>setNote(e.target.value)} required/></div>
-      <button type="submit" disabled={busy} className="btn btn-primary" style={{alignSelf:'flex-start'}}>Save review<ArrowRight size={16} className="arrow" aria-hidden="true"/></button>
-    </form>:<div className="alert alert-ok"><span><b>Reviewed: {a.outcome}</b> · {a.reviewNotes}</span></div>}
-  </div>;
 }

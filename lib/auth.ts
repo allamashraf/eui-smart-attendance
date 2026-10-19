@@ -1,4 +1,5 @@
 import { SignJWT, jwtVerify } from 'jose';
+import { randomUUID } from 'node:crypto';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { query } from './db';
@@ -12,16 +13,28 @@ function secret() {
   return new TextEncoder().encode(process.env.AUTH_SECRET);
 }
 export async function issueSession(id: string): Promise<string> {
-  return new SignJWT({ typ: 'demo' }).setProtectedHeader({ alg: 'HS256' }).setSubject(id).setIssuedAt().setExpirationTime('12h').sign(secret());
+  const jti=randomUUID();
+  await query("INSERT INTO auth_sessions(id,user_id,expires_at) VALUES($1,$2,now()+interval '12 hours')",[jti,id]);
+  return new SignJWT({ typ: 'demo' }).setProtectedHeader({ alg: 'HS256' }).setSubject(id).setJti(jti).setIssuedAt().setExpirationTime('12h').sign(secret());
 }
 async function resolveUser(token?: string): Promise<AppUser | null> {
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, secret(), { algorithms: ['HS256'] });
-    if (payload.typ !== 'demo' || typeof payload.sub !== 'string') return null;
-    const result = await query<AppUser>('SELECT id, username, full_name, role, demo FROM users WHERE id=$1 AND active=true', [payload.sub]);
+    if (payload.typ !== 'demo' || typeof payload.sub !== 'string' || typeof payload.jti !== 'string') return null;
+    const result=await query<AppUser>(
+      'SELECT u.id,u.username,u.full_name,u.role,u.demo FROM users u JOIN auth_sessions s ON s.user_id=u.id WHERE u.id=$1 AND s.id=$2 AND s.revoked_at IS NULL AND s.expires_at>now() AND u.active=true',
+      [payload.sub,payload.jti]);
     return result.rows[0] || null;
   } catch { return null; }
+}
+export async function revokeSession(token?:string):Promise<void>{
+ if(!token)return;
+ try{
+  const {payload}=await jwtVerify(token,secret(),{algorithms:['HS256']});
+  if(typeof payload.sub==='string'&&typeof payload.jti==='string')
+   await query('UPDATE auth_sessions SET revoked_at=now() WHERE id=$1 AND user_id=$2 AND revoked_at IS NULL',[payload.jti,payload.sub]);
+ }catch{/* expired token */}
 }
 export async function currentUser(): Promise<AppUser | null> {
   const store = await cookies();
