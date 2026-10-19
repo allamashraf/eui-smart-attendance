@@ -14,7 +14,7 @@ const roleLabel:Record<AppUser['role'],string>={student:'Student',instructor:'In
 // The product mark: concentric "scan" rings. Deliberately not a university logo.
 export function BrandMark({size=28}:{size?:number}){
   return <svg width={size} height={size} viewBox="0 0 28 28" aria-hidden="true">
-    <rect width="28" height="28" rx="8" fill="#0E1113"/>
+    <rect width="28" height="28" rx="8" fill="#001433"/>
     <circle cx="14" cy="14" r="8.2" fill="none" stroke="#5FD3BC" strokeWidth="1.5" opacity=".45"/>
     <circle cx="14" cy="14" r="4.6" fill="none" stroke="#5FD3BC" strokeWidth="1.8"/>
     <circle cx="14" cy="14" r="1.8" fill="#FFFFFF"/>
