@@ -10,7 +10,7 @@ export function pool(): Pool {
     u.searchParams.delete('sslmode');
     global.__euiPool = new Pool({
       connectionString: u.toString(),
-      ssl: local ? false : { rejectUnauthorized: false },
+      ssl: local ? false : { rejectUnauthorized: true },
       // Vercel runs many small instances; keep each one's pool small.
       max: process.env.VERCEL ? 3 : 10,
     });
