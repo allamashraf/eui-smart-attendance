@@ -26,7 +26,7 @@ export function useLiveSession(sessionId:string,initiallyActive:boolean){
   const[,setTick]=useState(0);
   const skew=useRef(0);        // server clock minus this computer's clock, in ms
   const alive=useRef(true);
-  useEffect(()=>()=>{alive.current=false;},[]);
+  useEffect(()=>{alive.current=true;return()=>{alive.current=false;};},[]);
 
   const loadLive=useCallback(async()=>{
     try{
