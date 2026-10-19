@@ -1,3 +1,5 @@
+> **Updated security/instructor-alert branch:** For a fresh database, independent GitHub copy and Vercel setup, read [SETUP_NEW_DATABASE_AND_VERCEL.md](./SETUP_NEW_DATABASE_AND_VERCEL.md). The prototype is not approved for real EUI student data.
+
 # EUI Smart Attendance — working prototype
 
 > **Online deployment:** see [`DEPLOY.md`](DEPLOY.md) (GitHub + Supabase + Vercel). GitHub Pages cannot run this project.
