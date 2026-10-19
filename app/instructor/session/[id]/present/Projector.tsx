@@ -1,7 +1,10 @@
 'use client';
-import {useCallback,useEffect,useRef,useState} from 'react';
-import {Maximize,Lock,CheckCheck,RefreshCw} from 'lucide-react';
+import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {Maximize,Lock,CheckCheck,RefreshCw,ScanLine,Unlock} from 'lucide-react';
+import {BrandMark} from '@/components/Shell';
+import {CountUp} from '@/components/CountUp';
 import {useLiveSession,postJson} from '../useLiveSession';
+import {pureBlackQr} from '../pureBlackQr';
 import styles from './present.module.css';
 
 // "Mariam Tarek" → "Mariam T." — the projector is seen by the whole class, so full names are not shown.
@@ -15,6 +18,8 @@ export function Projector({sessionId,heading,room,initiallyActive}:{sessionId:st
   const busyRef=useRef(false);
   const ended=live?live.state==='ended':!initiallyActive;
   const closed=!ended&&challenge?.state==='qr_closed';
+  // Pure black modules on pure white, whatever colour the server drew.
+  const qrSrc=useMemo(()=>pureBlackQr(challenge?.qrImage),[challenge?.qrImage]);
 
   // Fullscreen can be refused by the browser (or not exist, e.g. iPhone Safari): fail quietly.
   const toggleFullscreen=useCallback(()=>{
@@ -46,6 +51,7 @@ export function Projector({sessionId,heading,room,initiallyActive}:{sessionId:st
 
   // A large notice for 2 seconds whenever the QR is closed or reopened, from any screen
   // (this keyboard, the live board, or the instructor's phone). Nothing is shown on first load.
+  // It appears in the side panel, so it never covers the QR.
   const qrState=challenge?(ended?'ended':challenge.state):null;
   const lastQrState=useRef<string|null>(null);
   const[notice,setNotice]=useState<string|null>(null);
@@ -63,36 +69,46 @@ export function Projector({sessionId,heading,room,initiallyActive}:{sessionId:st
   const total=(challenge?.intervalSeconds??8)*1000;
   const fraction=Math.min(1,remainingMs/total);
   const counts=live?.counts;
+  const seconds=Math.ceil(remainingMs/1000);
 
   return <div className={styles.stage}>
     <header className={styles.header}>
-      <div><h1>{heading}</h1><p>{room}{room?' · ':''}Scan with the EUI website: Check in → camera</p></div>
-      <button type="button" className={styles.fsButton} onClick={toggleFullscreen} aria-label="Fullscreen (Shift+F)"><Maximize size={22}/></button>
+      <div className={styles.titleBlock}>
+        <span className={styles.brand}><BrandMark size={26}/>EUI Attendance</span>
+        <h1>{heading}</h1>
+        <p>{room}{room?' · ':''}Open <b>Check in</b> and scan</p>
+      </div>
+      <button type="button" className={styles.fsButton} onClick={toggleFullscreen} aria-label="Fullscreen (Shift+F)"><Maximize size={20}/></button>
     </header>
     <main className={styles.main}>
+      {/* The QR card never animates, blurs, scales, fades or gets covered. */}
       <div className={styles.qrArea}>
-        {ended?<div className={styles.bigState}><CheckCheck size={72}/><b>Session ended</b></div>
-          :closed?<div className={styles.bigState}><Lock size={72}/><b>Check-in closed</b><span>Ask your instructor if you could not scan.</span></div>
-          :challenge?.qrImage?<img className={styles.qr} src={challenge.qrImage} alt="Attendance QR code"/>
-          :<div className={styles.bigState}><RefreshCw size={56}/><span>Loading…</span></div>}
+        {ended?<div className={styles.bigState}><CheckCheck size={64} aria-hidden="true"/><b>Session ended</b></div>
+          :closed?<div className={styles.bigState}><Lock size={64} aria-hidden="true"/><b>Check-in closed</b></div>
+          :qrSrc?<img className={styles.qr} src={qrSrc} alt="Attendance QR code"/>
+          :<div className={styles.bigState}><RefreshCw size={48} className="spin" aria-hidden="true"/><span>Loading…</span></div>}
       </div>
       <aside className={styles.side}>
-        {!ended&&!closed&&<div className={styles.ringWrap} aria-label={`Code changes in ${Math.ceil(remainingMs/1000)} seconds`}>
-          <svg viewBox="0 0 120 120" className={styles.ring}>
+        {notice&&<div className={styles.notice} role="status" aria-live="assertive">{notice==='QR closed'?<Lock size={28} aria-hidden="true"/>:<Unlock size={28} aria-hidden="true"/>}<b>{notice}</b></div>}
+        {!ended&&!closed&&<div className={styles.ringWrap} aria-label={`Code changes in ${seconds} seconds`}>
+          <svg viewBox="0 0 120 120" className={styles.ring} aria-hidden="true">
             <circle cx="60" cy="60" r={RING_R} className={styles.ringTrack}/>
             <circle cx="60" cy="60" r={RING_R} className={styles.ringFill} strokeDasharray={RING_C} strokeDashoffset={RING_C*(1-fraction)}/>
           </svg>
-          <span className={styles.ringText}>{Math.ceil(remainingMs/1000)}</span>
+          <span className={styles.ringText}>{seconds}</span>
           <small>new code</small>
         </div>}
-        <div className={styles.counter}><b>{counts?.attended??'—'}</b><span>/ {counts?.roster??'—'}</span><small>checked in</small></div>
+        <div className={styles.counter}>
+          <div className={styles.counterNums}>{counts?<CountUp value={counts.attended}/>:<b>—</b>}<span>/ {counts?.roster??'—'}</span></div>
+          <small>checked in</small>
+          {counts&&<div className={styles.counterBar} aria-hidden="true"><span style={{width:`${counts.roster?Math.min(100,100*counts.attended/counts.roster):0}%`}}/></div>}
+        </div>
         <ol className={styles.feed} aria-label="Latest check-ins">
-          {(live?.recent??[]).map(r=><li key={r.name+r.checkedInAt} className={styles.feedItem}>{shortName(r.name)}</li>)}
+          {(live?.recent??[]).map(r=><li key={r.name+r.checkedInAt} className={styles.feedItem}><ScanLine size={18} aria-hidden="true"/>{shortName(r.name)}</li>)}
         </ol>
         {error&&<p className={styles.error}>{error}</p>}
       </aside>
     </main>
-    <footer className={styles.footer}>Shift+F fullscreen · Shift+C {closed?'reopen':'close'} QR{busy?' · saving…':''}</footer>
-    {notice&&<div className={styles.notice} role="status" aria-live="assertive"><b>{notice}</b></div>}
+    <footer className={styles.footer}><span><kbd>Shift</kbd>+<kbd>F</kbd> fullscreen</span><span><kbd>Shift</kbd>+<kbd>C</kbd> {closed?'reopen':'close'} QR</span>{busy&&<span>saving…</span>}<span className={styles.footNote}>Student prototype · Not an official EUI system</span></footer>
   </div>;
 }

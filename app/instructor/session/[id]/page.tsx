@@ -12,8 +12,8 @@ export default async function SessionPage({params}:{params:Promise<{id:string}>}
   const {rows}=await query(`SELECT s.id,s.title,s.room,s.state,s.started_at,sub.code,sub.title AS class_title
     FROM class_sessions s JOIN subjects sub ON sub.id=s.subject_id WHERE s.id=$1 AND sub.instructor_id=$2`,[id,user.id]);
   if(!rows.length)notFound();const session=rows[0];
-  return <Shell user={user} active="/instructor" heading={`${session.code} · ${session.title}`} subtitle={`${session.class_title} · ${session.room} · Started ${displayDate(session.started_at)}`}>
-    <Link className="back-link" href="/instructor"><ArrowLeft size={17}/> Back to classes</Link>
+  return <Shell user={user} active="/instructor" heading={`${session.code} · ${session.title}`} subtitle={`${session.room} · ${displayDate(session.started_at)}`}>
+    <Link className="back-link" href="/instructor"><ArrowLeft size={16} aria-hidden="true"/>Classes</Link>
     <LiveBoard sessionId={id} initiallyActive={session.state==='active'}/>
   </Shell>;
 }

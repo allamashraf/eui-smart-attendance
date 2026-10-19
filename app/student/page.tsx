@@ -1,9 +1,8 @@
 import Link from 'next/link';
-import {BookOpen,CalendarDays,CheckCircle2,Clock3,ArrowUpRight,ScanLine} from 'lucide-react';
+import {ArrowRight,BookOpen,CheckCircle2,Clock3,ScanLine} from 'lucide-react';
 import {requireUser} from '@/lib/auth';
 import {query} from '@/lib/db';
 import {Shell,Stat,SectionHeader,StateBadge,displayDate} from '@/components/Shell';
-import {QR} from '@/lib/config';
 import {CorrectionForm} from './CorrectionForm';
 export const dynamic='force-dynamic';
 export default async function StudentPage(){const user=await requireUser('student');
@@ -25,12 +24,55 @@ export default async function StudentPage(){const user=await requireUser('studen
       JOIN subjects sub ON sub.id=s.subject_id WHERE c.student_id=$1 ORDER BY c.created_at DESC LIMIT 5`,[user.id])
   ]);
   const s=summary.rows[0];const active=sessions.rows.filter(x=>x.state==='active');
-  return <Shell user={user} active="/student" heading={`Hello, ${user.full_name.split(' ')[0]} 👋`} subtitle="Here's your classes, attendance history, and upcoming check-ins.">
-    <div className="stats-grid"><Stat label="Enrolled classes" value={s.classes} note="Current term" Icon={BookOpen}/><Stat label="Recorded check-ins" value={s.attended} note="Across your classes" Icon={CheckCircle2}/><Stat label="Late arrivals" value={s.late} note="Recorded separately" Icon={Clock3}/><Stat label="Active sessions" value={active.length} note="Ready to check in" Icon={ScanLine}/></div>
-    {active.length>0&&<div className="feature-banner"><div><span className="banner-kicker"><span className="pulse-dot"/> SESSION IN PROGRESS</span><h2>{active[0].code} · {active[0].session_name}</h2><p>Open check-in and scan your instructor's live QR code with the camera inside this website.</p></div><Link className="white-btn" href="/checkin">Open check-in <ArrowUpRight size={17}/></Link></div>}
-    <div className="content-grid"><section className="panel"><SectionHeader title="Your classes" note="Assigned to your demo student account"/><div className="class-list">{subjects.rows.map((sub:any)=><div className="class-item" key={sub.id}><div className="class-icon"><BookOpen size={20}/></div><div className="class-text"><b>{sub.code} — {sub.title}</b><p>{sub.instructor_name} · {sub.room}</p><span>{sub.term}</span></div><div className="class-progress"><b>{sub.attended}/{sub.session_count}</b><small>Sessions recorded</small></div></div>)}</div></section>
-    <section className="panel"><SectionHeader title="Check-in guidance" note="Secure by design, accessible by default"/><div className="howto"><div><span>01</span><p><b>Sign in</b><small>Your username identifies your demo student record.</small></p></div><div><span>02</span><p><b>Scan live QR</b><small>Scan the instructor's rotating code. It changes every {QR.intervalSeconds} seconds.</small></p></div><div><span>03</span><p><b>Get confirmation</b><small>One check-in per class session, enforced by PostgreSQL.</small></p></div></div><Link href="/checkin" className="secondary-btn">Open check-in screen <ArrowUpRight size={16}/></Link></section></div>
-    <section className="panel"><SectionHeader title="Attendance history" note="Only you can see your records"/><div className="table-scroll"><table className="history-table"><thead><tr><th>Class</th><th>Session</th><th>Time</th><th>Status</th><th>Method</th></tr></thead><tbody>{history.rows.map((r:any)=><tr key={r.id}><td data-label="Class"><b>{r.code}</b></td><td data-label="Session">{r.session_name}</td><td data-label="Time">{displayDate(r.checked_in_at)}</td><td data-label="Status"><StateBadge value={r.status}/></td><td data-label="Method">{r.method==='qr'?'Rotating QR':'Manual / approved'}</td></tr>)}{history.rows.length===0&&<tr><td colSpan={5} className="empty-table">No check-ins yet. Your first attendance will appear here.</td></tr>}</tbody></table></div></section>
-    <div className="content-grid"><section className="panel"><SectionHeader title="Request a correction" note="The administrator reviews every request"/><CorrectionForm sessions={sessions.rows.map((s:any)=>({id:s.id,label:`${s.code} — ${s.session_name}`}))}/></section><section className="panel"><SectionHeader title="Your requests" note="No automatic penalties or decisions"/>{corrections.rows.length?corrections.rows.map((c:any,i:number)=><div className="simple-row" key={i}><span>{c.code} · {c.session_name}</span><StateBadge value={c.status}/></div>):<p className="muted small">No correction requests submitted.</p>}<div className="privacy-tip"><CalendarDays size={19}/><span>Location and device signals are supporting evidence, never conclusive proof of absence or misconduct.</span></div></section></div>
+  return <Shell user={user} active="/student" heading={`Hello, ${user.full_name.split(' ')[0]}`}>
+    {active.length>0&&<section className="live-hero reveal" style={{'--i':1} as React.CSSProperties} aria-label="Session in progress">
+      <div className="live-hero-copy">
+        <span className="eyebrow eyebrow-light"><span className="live-dot mint"/>Live now</span>
+        <h2>{active[0].code} · {active[0].session_name}</h2>
+      </div>
+      <Link className="btn btn-light btn-lg" href="/checkin"><ScanLine size={18} aria-hidden="true"/>Check in<ArrowRight size={17} className="arrow" aria-hidden="true"/></Link>
+    </section>}
+
+    <div className="grid grid-3 stats">
+      <Stat i={2} label="Classes" value={s.classes} Icon={BookOpen}/>
+      <Stat i={3} label="Check-ins" value={s.attended} Icon={CheckCircle2}/>
+      <Stat i={4} label="Late" value={s.late} Icon={Clock3}/>
+    </div>
+
+    <div className="split section">
+      <section className="card card-pad reveal" style={{'--i':6} as React.CSSProperties}>
+        <SectionHeader title="Classes"/>
+        <div>{subjects.rows.map((sub:any,i:number)=><div className="class-row" key={sub.id}>
+          <span className="class-code" aria-hidden="true">{sub.code}</span>
+          <div className="class-meta">
+            <span className="row-title">{sub.title}</span>
+            <span className="row-sub">{sub.instructor_name} · {sub.room}</span>
+            <div className="meter" aria-hidden="true"><span style={{width:`${sub.session_count?Math.min(100,100*sub.attended/sub.session_count):0}%`,'--i':i} as React.CSSProperties}/></div>
+          </div>
+          <div className="class-count" aria-label={`${sub.attended} of ${sub.session_count} sessions`}>{sub.attended}<span className="muted">/{sub.session_count}</span></div>
+        </div>)}
+        {!subjects.rows.length&&<p className="empty">No classes yet.</p>}</div>
+      </section>
+      <section className="card card-pad reveal" style={{'--i':7} as React.CSSProperties}>
+        <SectionHeader title="History"/>
+        <div className="rows">{history.rows.map((r:any)=><div className="record" key={r.id}>
+          <div className="record-main"><b>{r.code} · {r.session_name}</b><time className="mono">{displayDate(r.checked_in_at)}</time></div>
+          <StateBadge value={r.status}/>
+        </div>)}</div>
+        {history.rows.length===0&&<div className="empty stack" style={{gap:12,alignItems:'center'}}><span>No check-ins yet.</span><Link href="/checkin" className="btn btn-secondary btn-sm">Check in</Link></div>}
+      </section>
+    </div>
+
+    <div className="split section">
+      <section className="card card-pad reveal" style={{'--i':8} as React.CSSProperties}>
+        <SectionHeader title="Request a correction"/>
+        <CorrectionForm sessions={sessions.rows.map((s:any)=>({id:s.id,label:`${s.code} — ${s.session_name}`}))}/>
+      </section>
+      <section className="card card-pad reveal" style={{'--i':9} as React.CSSProperties}>
+        <SectionHeader title="Requests"/>
+        <div className="rows">{corrections.rows.map((c:any,i:number)=><div className="record" key={i}><div className="record-main"><b>{c.code} · {c.session_name}</b></div><StateBadge value={c.status}/></div>)}</div>
+        {!corrections.rows.length&&<p className="empty">No requests.</p>}
+      </section>
+    </div>
   </Shell>;
 }
