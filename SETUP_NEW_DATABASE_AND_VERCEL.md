@@ -4,7 +4,7 @@ This is a **student-built prototype**, not an official university system. **Do n
 
 ## 1. Copy into your own GitHub repository
 
-The source repository belongs to another owner. This work is on branch `security-instructor-alerts-2026` so its `main` is unchanged.
+The source repository belongs to another owner. This work is on branch `security-instructor-alerts-clean` so its `main` is unchanged.
 
 On GitHub: use **Fork** on `allamashraf/eui-smart-attendance`. Under your own fork, sync/import that security branch, then optionally make it the default. Alternatively use GitHub **Import repository** with the original HTTPS Git URL, then cherry-pick the branch changes from the source repository. Confirm that your new repository has the instructor alert files and security migration. A new repository cannot be created automatically with this integration.
 
@@ -13,7 +13,7 @@ On GitHub: use **Fork** on `allamashraf/eui-smart-attendance`. Under your own fo
 Install **Git** and **GitHub CLI** (`gh`), then authenticate with `gh auth login` and run:
 
 ```powershell
-git clone --branch security-instructor-alerts-2026 --single-branch https://github.com/allamashraf/eui-smart-attendance.git eui-smart-attendance-secure
+git clone --branch security-instructor-alerts-clean --single-branch https://github.com/allamashraf/eui-smart-attendance.git eui-smart-attendance-secure
 cd eui-smart-attendance-secure
 git remote remove origin
 git branch -m main
@@ -22,51 +22,42 @@ gh repo create eui-smart-attendance-secure --private --source=. --remote=origin 
 
 This creates a new repository **owned by your signed-in GitHub account** and publishes the updated branch as its `main`. It does not alter the original repository. If you prefer a public repository, replace `--private` with `--public` (avoid committing secrets or real student data).
 
-## 2. Create the database (Supabase/PostgreSQL)
+## 2. Reuse the ORIGINAL Supabase database and variables from Vercel
 
-1. Create a new project at https://supabase.com/dashboard and save its database password.
-2. In Supabase select **Connect** and copy the **Session Pooler** PostgreSQL URI on port 5432, for example:
-   `postgresql://postgres.PROJECT_REF:PASSWORD@aws-0-REGION.pooler.supabase.com:5432/postgres`.
-3. Do not use the Supabase anon/publishable API key as `DATABASE_URL`.
-4. On your computer, install Node.js 22, then in the project folder:
-   ```powershell
-   npm install
-   Copy-Item .env.example .env.local
-   ```
-5. Edit `.env.local`:
-   ```env
-   DATABASE_URL="postgresql://postgres.PROJECT_REF:ENCODED_PASSWORD@POOLER_HOST:5432/postgres"
-   AUTH_SECRET="RANDOM_SECRET_1"
-   QR_SECRET="DIFFERENT_RANDOM_SECRET_2"
-   DEMO_PASSWORD="A_LONG_RANDOM_DEMO_PASSWORD"
-   ```
-   Generate each secret separately using:
-   ```powershell
-   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-   ```
-   URL-encode special characters in the database password. For an external database, the Node PostgreSQL client validates TLS certificates; configure a trusted CA at the operating-system or Node trust store level if the provider requires it. **Never set `NODE_TLS_REJECT_UNAUTHORIZED=0`.**
-6. Initialize the schema:
-   ```powershell
-   npm run db:setup
-   ```
-   Only for a disposable **synthetic-demo** database, optionally run `npm run db:seed`. This creates demo passwords/accounts; never run it on real university data.
-7. For existing databases, close duplicate active sessions before applying the security migration because the unique index enforces one active session per class.
-8. Test:
-   ```powershell
-   npm test
-   npm run build
-   npm run dev
-   ```
+**Do not create a new Supabase project.** Reuse the existing PostgreSQL instance that the original Vercel project already uses. GitHub branches do not contain secret environment variable values.
+
+1. Open the **original** Vercel deployment at https://vercel.com/dashboard → `eui-smart-attendance` → **Settings → Environment Variables**.
+2. Read the values for `DATABASE_URL`, `AUTH_SECRET`, `QR_SECRET`; preserve the originals. Do not put these secrets into GitHub or send them in chat.
+3. In the **new** Vercel project, configure the exact same values and select the appropriate environment(s). If deploying a different branch within the *same* Vercel project, check whether its Preview environment already inherits the required variables instead of creating duplicates.
+4. Preserve any existing optional settings: `QR_INTERVAL_SECONDS`, `QR_GRACE_SECONDS`, `RADIUS_M`, `MAX_ACCURACY_M`, `REJECT_BEYOND_M`. The demo-only `DEMO_PASSWORD` is needed only if you intentionally run a demo seed script from your computer.
+5. **Back up the original database before changing it.** In the Supabase SQL Editor, inspect for multiple `active` class sessions per subject, then apply `db/migrations/004_security_hardening.sql` to add `auth_sessions` and `auth_rate_limits`. This schema upgrade is required for new login sessions. Review its changes before execution; do not run it against a production university database without authorization.
+6. Do **not** run `npm run db:seed` against the existing database. That command can overwrite demo account passwords, change session timestamps, and modify class records.
+7. If using local development, create `.env.local` beside `package.json` with the same original variables, but never commit the file. Run `npm install`, `npm test`, `npm run build`, and `npm run dev` to check the application.
+8. The improved database client verifies hosted PostgreSQL TLS certificates, unlike the previous insecure `rejectUnauthorized:false` configuration. If the old Supabase connection fails certificate verification, configure the appropriate trusted CA; do not turn off certificate verification.
+
+### Original variable names (same in `main` and this branch)
+
+| Name | Required? | Source |
+|---|---|---|
+| `DATABASE_URL` | Yes | Original Vercel environment / existing Supabase connection |
+| `AUTH_SECRET` | Yes | Original Vercel environment |
+| `QR_SECRET` | Yes | Original Vercel environment |
+| `DEMO_PASSWORD` | Local demo seed only | Original local setup, not needed on deployed Vercel |
+| `QR_INTERVAL_SECONDS` | Optional | Original Vercel environment or default 8 |
+| `QR_GRACE_SECONDS` | Optional | Original Vercel environment or default 3 |
+| `RADIUS_M` | Optional | Original Vercel environment or default 75 |
+| `MAX_ACCURACY_M` | Optional | Original Vercel environment or default 150 |
+| `REJECT_BEYOND_M` | Optional | Original Vercel environment or default 1000 |
 
 ## 3. Deploy on Vercel
 
 1. Sign in to https://vercel.com/dashboard with your GitHub account.
 2. Select **Add New → Project**; import **your own fork or new repository** (not the original).
 3. Select the intended deployment branch; Next.js should be detected automatically.
-4. In **Settings → Environment Variables**, configure `DATABASE_URL`, `AUTH_SECRET` and `QR_SECRET` for Production (and Preview only if using a separate demo database). Never commit secrets to GitHub.
+4. In **Settings → Environment Variables**, reuse the original project's values of `DATABASE_URL`, `AUTH_SECRET`, `QR_SECRET`, and all existing optional settings for the chosen environment. Never commit secrets to GitHub.
 5. Click **Deploy**, then check `https://YOUR-SITE.vercel.app/api/health`.
 6. If you edit environment variables after deploying, **redeploy** for the changes to take effect. Never expose the database URL through `NEXT_PUBLIC_` variables.
-7. Seed the demo database from your local computer **only if** this is an isolated, synthetic test.
+7. Do not seed the original database. Test using only existing authorized demo accounts.
 8. Instructor alerts should appear at `/instructor/alerts` for an instructor account and show only alerts for that instructor's classes.
 
 ## 4. University production requirements
