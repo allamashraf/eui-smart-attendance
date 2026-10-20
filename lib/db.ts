@@ -8,9 +8,12 @@ export function pool(): Pool {
     const u = new URL(process.env.DATABASE_URL);
     const local = ['localhost', '127.0.0.1', '::1', '[::1]'].includes(u.hostname);
     u.searchParams.delete('sslmode');
+    // Supabase's pooler certificate may require its project CA, copied into
+    // DATABASE_CA_CERT in Vercel. Preserve peer/hostname verification.
+    const cert = process.env.DATABASE_CA_CERT?.replace(/\\n/g, '\n').trim();
     global.__euiPool = new Pool({
       connectionString: u.toString(),
-      ssl: local ? false : { rejectUnauthorized: true },
+      ssl: local ? false : { rejectUnauthorized: true, ...(cert ? { ca: cert } : {}) },
       // Vercel runs many small instances; keep each one's pool small.
       max: process.env.VERCEL ? 3 : 10,
     });
