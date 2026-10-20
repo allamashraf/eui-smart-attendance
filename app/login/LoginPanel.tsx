@@ -11,7 +11,14 @@ export function LoginPanel({nextPath}:{nextPath:string}){
   const[show,setShow]=useState(false);const[busy,setBusy]=useState(false);const[error,setError]=useState('');
   async function onSubmit(e:FormEvent){e.preventDefault();setBusy(true);setError('');try{
     const res=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
-    const data=await res.json();if(!res.ok)throw new Error(data.error||'Sign in failed');window.location.href=(data.to==='/student' && nextPath==='/checkin')?nextPath:data.to;
+    // Infrastructure failures may return HTML or an empty body. Never hide the real
+    // HTTP failure behind an "Unexpected end of JSON input" error.
+    const raw=await res.text();
+    let data:{error?:string,to?:string}|null=null;
+    if(raw){try{data=JSON.parse(raw);}catch{/* A proxy or server returned non-JSON. */}}
+    if(!res.ok)throw new Error(data?.error||`Sign-in service unavailable (HTTP ${res.status}). Please try again shortly.`);
+    if(!data?.to || !['/student','/instructor','/admin'].includes(data.to))throw new Error('Sign-in service returned an invalid response. Please try again.');
+    window.location.href=(data.to==='/student' && nextPath==='/checkin')?nextPath:data.to;
   }catch(err){setError(err instanceof Error?err.message:'Sign in failed');setBusy(false);}}
 
   return <div className="auth">
