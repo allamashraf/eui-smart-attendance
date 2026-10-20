@@ -4,5 +4,6 @@ export function pgOptions(url = process.env.DATABASE_URL) {
   const u = new URL(url);
   const local = ['localhost', '127.0.0.1', '::1', '[::1]'].includes(u.hostname);
   u.searchParams.delete('sslmode');
-  return { connectionString: u.toString(), ssl: local ? false : { rejectUnauthorized: true } };
+  const cert = process.env.DATABASE_CA_CERT?.replace(/\\n/g, '\n').trim();
+  return { connectionString: u.toString(), ssl: local ? false : { rejectUnauthorized: true, ...(cert ? { ca: cert } : {}) } };
 }
