@@ -239,3 +239,15 @@ SELECT type, details, created_at FROM security_events ORDER BY created_at DESC L
 ```
 
 If the app cannot connect, verify `DATABASE_URL`, database credentials, host/SSL settings, firewall/network reachability, and that `npm run db:setup` completed. The `/api/health` URL checks connectivity without showing database credentials.
+
+## C++ / WebAssembly attendance analytics
+
+The student **Classes** panel now executes a real C++ module compiled to WebAssembly. It reads the enrolled student's existing server-provided attendance totals, counts **ended** sessions only, computes a rounded attendance percentage, and marks percentages below an illustrative 75% target. This is a **demo label, not an EUI academic rule**, and it does not affect check-in authorization, attendance records, or disciplinary decisions. The browser loads `public/attendance-engine.wasm` (precompiled and committed), so Vercel does **not** need a C++ toolchain at runtime. No individual attendance data is sent to a third-party service.
+
+- Source: `cpp/attendance_engine.cpp`
+- Runtime adapter: `app/student/ClassAttendance.tsx`
+- Compiled binary: `public/attendance-engine.wasm`
+- Recompile (LLVM Clang with WebAssembly target and wasm-ld installed): `npm run build:cpp`
+- Test compiled C++ logic: `npm test` (includes WebAssembly boundary tests)
+
+If the module cannot load, the UI shows raw counts and an error rather than silently using TypeScript for the calculation. Rebuild and commit the `.wasm` file whenever the C++ source changes.

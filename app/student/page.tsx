@@ -4,12 +4,13 @@ import {requireUser} from '@/lib/auth';
 import {query} from '@/lib/db';
 import {Shell,Stat,SectionHeader,StateBadge,displayDate} from '@/components/Shell';
 import {CorrectionForm} from './CorrectionForm';
+import {ClassAttendance} from './ClassAttendance';
 export const dynamic='force-dynamic';
 export default async function StudentPage(){const user=await requireUser('student');
   const [subjects,summary,history,sessions,corrections]=await Promise.all([
     query(`SELECT sub.*,u.full_name as instructor_name,
-      (SELECT count(*)::int FROM class_sessions WHERE subject_id=sub.id) as session_count,
-      (SELECT count(*)::int FROM attendance_records ar JOIN class_sessions cs ON cs.id=ar.session_id WHERE ar.student_id=$1 AND cs.subject_id=sub.id) as attended
+      (SELECT count(*)::int FROM class_sessions WHERE subject_id=sub.id AND state='ended') as session_count,
+      (SELECT count(*)::int FROM attendance_records ar JOIN class_sessions cs ON cs.id=ar.session_id WHERE ar.student_id=$1 AND cs.subject_id=sub.id AND cs.state='ended') as attended
       FROM subjects sub JOIN enrollments e ON e.subject_id=sub.id JOIN users u ON u.id=sub.instructor_id
       WHERE e.student_id=$1 AND e.status='active' ORDER BY sub.code`,[user.id]),
     query(`SELECT (SELECT count(*)::int FROM attendance_records WHERE student_id=$1) AS attended,
@@ -42,16 +43,12 @@ export default async function StudentPage(){const user=await requireUser('studen
     <div className="split section">
       <section className="card card-pad reveal" style={{'--i':6} as React.CSSProperties}>
         <SectionHeader title="Classes"/>
-        <div>{subjects.rows.map((sub:any,i:number)=><div className="class-row" key={sub.id}>
-          <span className="class-code" aria-hidden="true">{sub.code}</span>
-          <div className="class-meta">
-            <span className="row-title">{sub.title}</span>
-            <span className="row-sub">{sub.instructor_name} · {sub.room}</span>
-            <div className="meter" aria-hidden="true"><span style={{width:`${sub.session_count?Math.min(100,100*sub.attended/sub.session_count):0}%`,'--i':i} as React.CSSProperties}/></div>
-          </div>
-          <div className="class-count" aria-label={`${sub.attended} of ${sub.session_count} sessions`}>{sub.attended}<span className="muted">/{sub.session_count}</span></div>
-        </div>)}
-        {!subjects.rows.length&&<p className="empty">No classes yet.</p>}</div>
+        <ClassAttendance classes={subjects.rows.map((sub:any)=>({
+          id:String(sub.id),code:String(sub.code),title:String(sub.title),
+          instructorName:String(sub.instructor_name),room:String(sub.room),
+          attended:Number(sub.attended),sessionCount:Number(sub.session_count)
+        }))}/>
+
       </section>
       <section className="card card-pad reveal" style={{'--i':7} as React.CSSProperties}>
         <SectionHeader title="History"/>
