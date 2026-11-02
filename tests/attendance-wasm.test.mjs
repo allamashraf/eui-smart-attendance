@@ -1,0 +1,28 @@
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {test} from 'node:test';
+const binary=await readFile(new URL('../public/attendance-engine.wasm',import.meta.url));
+const {instance}=await WebAssembly.instantiate(binary,{});
+const {attendance_percent:percent,attendance_band:band}=instance.exports;
+test('C++ WebAssembly attendance analytics',()=>{
+  assert.equal(percent(7,10),70);
+  assert.equal(percent(1,3),33);
+  assert.equal(percent(2,3),67);
+  assert.equal(percent(3,3),100);
+  assert.equal(percent(0,0),0);
+  assert.equal(percent(0,4),0);
+  assert.equal(percent(1,0),-1);
+  assert.equal(percent(-1,3),-1);
+  assert.equal(percent(4,3),-1);
+  assert.equal(percent(2147483647,2147483647),100);
+  assert.equal(band(0,0,75),0);
+  assert.equal(band(7,10,75),1);
+  assert.equal(band(3,4,75),2);
+  assert.equal(band(4,4,75),2);
+  assert.equal(band(1,3,75),1);
+  assert.equal(band(3,4,101),-1);
+  assert.equal(band(3,4,-1),-1);
+  assert.equal(band(3,4,0),2);
+  assert.equal(band(0,4,100),1);
+  assert.equal(band(2147483647,2147483647,100),2);
+});
